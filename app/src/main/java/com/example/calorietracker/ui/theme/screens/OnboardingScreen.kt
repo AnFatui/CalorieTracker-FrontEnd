@@ -30,6 +30,9 @@ fun OnboardingScreen(
     onContinueClick: () -> Unit
 ) {
     val isWeightMaintenance = appState.selectedGoal == "Gewicht halten"
+    val canContinue = appState.selectedGoal.isNotBlank() &&
+            appState.currentWeight.isNotBlank() &&
+            (isWeightMaintenance || appState.targetWeight.isNotBlank())
 
     Column(
         modifier = Modifier
@@ -42,27 +45,22 @@ fun OnboardingScreen(
 
         Text("━  •  •  •", color = Color(0xFF22C55E), fontSize = 22.sp)
 
-        Spacer(Modifier.height(30.dp))
+        Spacer(Modifier.height(28.dp))
 
-        Text(
-            text = "Deine Ziele",
-            color = Color.White,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text("Deine Ziele", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
 
         Text(
             text = "Erzähl uns etwas über deine Ziele, damit wir dich bestmöglich unterstützen können.",
-            color = Color.White,
+            color = Color.White.copy(alpha = 0.8f),
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 12.dp)
         )
 
-        Spacer(Modifier.height(34.dp))
+        Spacer(Modifier.height(32.dp))
 
         Text(
-            text = "Mein Ziel ist es ...",
+            "Mein Ziel ist es ...",
             color = Color.White,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.fillMaxWidth()
@@ -70,65 +68,40 @@ fun OnboardingScreen(
 
         Spacer(Modifier.height(14.dp))
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            GoalBox(
-                text = "Abnehmen",
-                selected = appState.selectedGoal == "Abnehmen",
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    onStateChange(appState.copy(selectedGoal = "Abnehmen"))
-                }
-            )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+            GoalBox("Abnehmen", appState.selectedGoal == "Abnehmen", Modifier.weight(1f)) {
+                onStateChange(appState.copy(selectedGoal = "Abnehmen"))
+            }
 
-            GoalBox(
-                text = "Muskeln\naufbauen",
-                selected = appState.selectedGoal == "Muskeln aufbauen",
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    onStateChange(appState.copy(selectedGoal = "Muskeln aufbauen"))
-                }
-            )
+            GoalBox("Muskeln\naufbauen", appState.selectedGoal == "Muskeln aufbauen", Modifier.weight(1f)) {
+                onStateChange(appState.copy(selectedGoal = "Muskeln aufbauen"))
+            }
 
-            GoalBox(
-                text = "Gewicht\nhalten",
-                selected = appState.selectedGoal == "Gewicht halten",
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    onStateChange(
-                        appState.copy(
-                            selectedGoal = "Gewicht halten",
-                            targetWeight = ""
-                        )
-                    )
-                }
-            )
+            GoalBox("Gewicht\nhalten", appState.selectedGoal == "Gewicht halten", Modifier.weight(1f)) {
+                onStateChange(appState.copy(selectedGoal = "Gewicht halten", targetWeight = ""))
+            }
         }
 
-        if (!isWeightMaintenance) {
+        if (!isWeightMaintenance && appState.selectedGoal.isNotBlank()) {
             Spacer(Modifier.height(28.dp))
 
             Text(
-                text = "Mein wöchentliches Ziel",
+                "Mein wöchentliches Ziel",
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.fillMaxWidth()
             )
 
             Text(
-                text = "${String.format("%.1f", appState.weeklyGoal)} kg pro Woche",
-                color = Color.White,
+                "${String.format("%.1f", appState.weeklyGoal)} kg pro Woche",
+                color = Color.White.copy(alpha = 0.85f),
                 fontSize = 13.sp,
                 modifier = Modifier.fillMaxWidth()
             )
 
             Slider(
                 value = appState.weeklyGoal,
-                onValueChange = { newValue ->
-                    onStateChange(appState.copy(weeklyGoal = newValue))
-                },
+                onValueChange = { onStateChange(appState.copy(weeklyGoal = it)) },
                 valueRange = 0.1f..1.5f,
                 steps = 13,
                 colors = SliderDefaults.colors(
@@ -139,7 +112,7 @@ fun OnboardingScreen(
             )
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(22.dp))
 
         if (isWeightMaintenance) {
             WeightInputBox(
@@ -147,23 +120,16 @@ fun OnboardingScreen(
                 value = appState.currentWeight,
                 placeholder = "z.B. 70",
                 modifier = Modifier.fillMaxWidth(),
-                onValueChange = {
-                    onStateChange(appState.copy(currentWeight = it))
-                }
+                onValueChange = { onStateChange(appState.copy(currentWeight = it)) }
             )
         } else {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(18.dp), modifier = Modifier.fillMaxWidth()) {
                 WeightInputBox(
                     label = "Aktuelles Gewicht",
                     value = appState.currentWeight,
                     placeholder = "z.B. 70",
                     modifier = Modifier.weight(1f),
-                    onValueChange = {
-                        onStateChange(appState.copy(currentWeight = it))
-                    }
+                    onValueChange = { onStateChange(appState.copy(currentWeight = it)) }
                 )
 
                 WeightInputBox(
@@ -171,19 +137,14 @@ fun OnboardingScreen(
                     value = appState.targetWeight,
                     placeholder = "z.B. 65",
                     modifier = Modifier.weight(1f),
-                    onValueChange = {
-                        onStateChange(appState.copy(targetWeight = it))
-                    }
+                    onValueChange = { onStateChange(appState.copy(targetWeight = it)) }
                 )
             }
         }
 
         Spacer(Modifier.weight(1f))
 
-        PrimaryButton(
-            text = "Weiter",
-            onClick = onContinueClick
-        )
+        PrimaryButton("Weiter", onContinueClick, enabled = canContinue)
 
         Spacer(Modifier.height(42.dp))
     }
@@ -200,16 +161,17 @@ private fun GoalBox(
         modifier = modifier
             .height(86.dp)
             .background(
-                color = if (selected) Color(0xFF22C55E) else Color(0xFF1F2937),
-                shape = RoundedCornerShape(14.dp)
+                if (selected) Color(0xFF22C55E) else Color(0xFF1F2937),
+                RoundedCornerShape(16.dp)
             )
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            color = Color.White,
+            color = if (selected) Color.Black else Color.White,
             fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
     }
@@ -225,27 +187,19 @@ private fun WeightInputBox(
 ) {
     Column(
         modifier = modifier
-            .height(104.dp)
-            .background(Color(0xFF1F2937), RoundedCornerShape(14.dp))
+            .height(106.dp)
+            .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
             .padding(12.dp)
     ) {
-        Text(
-            text = label,
-            color = Color.White.copy(alpha = 0.7f),
-            fontSize = 11.sp
-        )
+        Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
 
         OutlinedTextField(
             value = value,
             onValueChange = { input ->
                 onValueChange(input.filter { it.isDigit() || it == ',' || it == '.' })
             },
-            placeholder = {
-                Text(placeholder, color = Color.Gray, fontSize = 12.sp)
-            },
-            suffix = {
-                Text("kg", color = Color.White, fontSize = 12.sp)
-            },
+            placeholder = { Text(placeholder, color = Color.Gray, fontSize = 12.sp) },
+            suffix = { Text("kg", color = Color.White, fontSize = 12.sp) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier

@@ -46,44 +46,59 @@ fun StatisticsScreen(
 
         Spacer(Modifier.height(22.dp))
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(145.dp)
-                .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
-                .padding(14.dp)
-        ) {
-            Text("Kalorien", color = Color.White, fontWeight = FontWeight.Bold)
+        when (selectedTab) {
+            "Woche" -> {
+                StatisticCard("Kalorien diese Woche") {
+                    if (appState.calories == 0) EmptyInfo("Noch keine Kalorien eingetragen.")
+                    else {
+                        Text("${appState.calories} / ${appState.calorieGoal} kcal", color = Color.White, fontSize = 12.sp)
+                        Spacer(Modifier.height(12.dp))
+                        ProgressBar(appState.calories, appState.calorieGoal, Color(0xFF22C55E))
+                    }
+                }
 
-            Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(14.dp))
 
-            if (appState.calories == 0) {
-                EmptyInfo("Noch keine Kalorien eingetragen.")
-            } else {
-                Text("${appState.calories} / ${appState.calorieGoal} kcal", color = Color.White, fontSize = 12.sp)
-                Spacer(Modifier.height(12.dp))
-                ProgressBar(appState.calories, appState.calorieGoal, Color(0xFF22C55E))
+                StatisticCard("Makronährstoffe diese Woche") {
+                    if (!hasNutritionData) EmptyInfo("Noch keine Makronährstoffe eingetragen.")
+                    else {
+                        MacroProgressLine("Protein", appState.protein, appState.proteinGoal, Color(0xFFEF4444))
+                        MacroProgressLine("Kohlenhydrate", appState.carbs, appState.carbsGoal, Color(0xFFF97316))
+                        MacroProgressLine("Fette", appState.fat, appState.fatGoal, Color(0xFFFACC15))
+                    }
+                }
             }
-        }
 
-        Spacer(Modifier.height(14.dp))
+            "Monat" -> {
+                StatisticCard("Monatsübersicht") {
+                    if (appState.meals.isEmpty() && appState.waterMl == 0 && appState.weightEntries.isEmpty()) {
+                        EmptyInfo("Noch keine Monatsdaten vorhanden.")
+                    } else {
+                        Text("Mahlzeiten: ${appState.meals.size}", color = Color.White, fontSize = 12.sp)
+                        Spacer(Modifier.height(8.dp))
+                        Text("Kalorien gesamt: ${appState.calories} kcal", color = Color.White, fontSize = 12.sp)
+                        Spacer(Modifier.height(8.dp))
+                        Text("Wasser heute: ${appState.waterMl} ml", color = Color.White, fontSize = 12.sp)
+                    }
+                }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
-                .padding(14.dp)
-        ) {
-            Text("Makronährstoffe", color = Color.White, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(14.dp))
 
-            if (!hasNutritionData) {
-                Spacer(Modifier.height(18.dp))
-                EmptyInfo("Noch keine Makronährstoffe eingetragen.")
-            } else {
-                MacroProgressLine("Protein", appState.protein, appState.proteinGoal, Color(0xFFEF4444))
-                MacroProgressLine("Kohlenhydrate", appState.carbs, appState.carbsGoal, Color(0xFFF97316))
-                MacroProgressLine("Fette", appState.fat, appState.fatGoal, Color(0xFFFACC15))
+                StatisticCard("Monatliche Entwicklung") {
+                    EmptyInfo("Detaillierte Monatsstatistiken werden später mit der Datenbank berechnet.")
+                }
+            }
+
+            "Jahr" -> {
+                StatisticCard("Jahresübersicht") {
+                    EmptyInfo("Noch keine Jahresdaten vorhanden.")
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                StatisticCard("Langzeitentwicklung") {
+                    EmptyInfo("Jahresvergleiche werden später aus gespeicherten Daten erstellt.")
+                }
             }
         }
 
@@ -92,15 +107,12 @@ fun StatisticsScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF1F2937), RoundedCornerShape(14.dp))
+                .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
                 .clickable { onWaterClick() }
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                "💧 Wasser   ${appState.waterMl} / ${appState.waterGoalMl} ml   >",
-                color = Color.White
-            )
+            Text("💧 Wasser   ${appState.waterMl} / ${appState.waterGoalMl} ml   >", color = Color.White)
         }
 
         Spacer(Modifier.weight(1f))
@@ -117,11 +129,23 @@ fun StatisticsScreen(
 }
 
 @Composable
-private fun EmptyInfo(text: String) {
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
+private fun StatisticCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(155.dp)
+            .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
+            .padding(14.dp)
     ) {
+        Text(title, color = Color.White, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(14.dp))
+        content()
+    }
+}
+
+@Composable
+private fun EmptyInfo(text: String) {
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Text(text, color = Color.Gray, fontSize = 12.sp)
     }
 }
@@ -130,26 +154,23 @@ private fun EmptyInfo(text: String) {
 private fun Tab(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .background(
-                if (selected) Color(0xFF22C55E) else Color(0xFF1F2937),
-                RoundedCornerShape(14.dp)
-            )
+            .background(if (selected) Color(0xFF22C55E) else Color(0xFF1F2937), RoundedCornerShape(14.dp))
             .clickable { onClick() }
             .padding(horizontal = 28.dp, vertical = 12.dp)
     ) {
-        Text(text, color = Color.White, fontSize = 11.sp)
+        Text(text, color = if (selected) Color.Black else Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
 private fun MacroProgressLine(label: String, value: Int, goal: Int, color: Color) {
-    Column(modifier = Modifier.padding(top = 12.dp)) {
+    Column(modifier = Modifier.padding(top = 8.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, color = Color.White, fontSize = 12.sp)
-            Text("$value / $goal g", color = Color.White, fontSize = 12.sp)
+            Text("$value / $goal g", color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
         }
 
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(5.dp))
 
         ProgressBar(value, goal, color)
     }

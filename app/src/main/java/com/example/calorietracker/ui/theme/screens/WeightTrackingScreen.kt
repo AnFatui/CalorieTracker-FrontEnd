@@ -20,6 +20,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.calorietracker.ui.theme.AppUiState
+import com.example.calorietracker.ui.theme.WeightEntry
 import com.example.calorietracker.ui.theme.components.AppBottomBar
 
 @Composable
@@ -40,12 +41,7 @@ fun WeightTrackingScreen(
         Spacer(Modifier.height(42.dp))
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(
-                "←",
-                color = Color.White,
-                fontSize = 30.sp,
-                modifier = Modifier.clickable { onBackClick() }
-            )
+            Text("←", color = Color.White, fontSize = 30.sp, modifier = Modifier.clickable { onBackClick() })
 
             Text("Gewicht", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
 
@@ -56,7 +52,13 @@ fun WeightTrackingScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.clickable {
                     if (newWeight.isNotBlank()) {
-                        onStateChange(appState.copy(currentWeight = newWeight))
+                        val newEntry = WeightEntry(newWeight, "Heute")
+                        onStateChange(
+                            appState.copy(
+                                currentWeight = newWeight,
+                                weightEntries = appState.weightEntries + newEntry
+                            )
+                        )
                         newWeight = ""
                     }
                 }
@@ -86,9 +88,7 @@ fun WeightTrackingScreen(
 
         OutlinedTextField(
             value = newWeight,
-            onValueChange = { input ->
-                newWeight = input.filter { it.isDigit() || it == ',' || it == '.' }
-            },
+            onValueChange = { input -> newWeight = input.filter { it.isDigit() || it == ',' || it == '.' } },
             placeholder = { Text("Neues Gewicht eintragen", color = Color.Gray) },
             suffix = { Text("kg", color = Color.White) },
             singleLine = true,
@@ -111,10 +111,10 @@ fun WeightTrackingScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(170.dp)
-                .background(Color(0xFF050505), RoundedCornerShape(14.dp)),
+                .background(Color(0xFF050505), RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center
         ) {
-            if (!hasWeight) {
+            if (appState.weightEntries.isEmpty()) {
                 Text("Noch kein Gewichtsverlauf vorhanden.", color = Color.Gray, fontSize = 12.sp)
             } else {
                 Canvas(Modifier.fillMaxSize().padding(18.dp)) {
@@ -142,8 +142,14 @@ fun WeightTrackingScreen(
                 .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
                 .padding(14.dp)
         ) {
-            WeightRow("Aktueller Eintrag", if (hasWeight) "${appState.currentWeight} kg" else "-")
-            WeightRow("Zielgewicht", if (appState.targetWeight.isBlank()) "-" else "${appState.targetWeight} kg")
+            if (appState.weightEntries.isEmpty()) {
+                WeightRow("Aktueller Eintrag", "-")
+                WeightRow("Zielgewicht", if (appState.targetWeight.isBlank()) "-" else "${appState.targetWeight} kg")
+            } else {
+                appState.weightEntries.reversed().forEach {
+                    WeightRow(it.dateLabel, "${it.value} kg")
+                }
+            }
         }
 
         Spacer(Modifier.weight(1f))

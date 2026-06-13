@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -18,7 +19,7 @@ fun RecipeDetailScreen(onBackClick: () -> Unit) {
     var isFavorite by remember { mutableStateOf(false) }
 
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
             .padding(20.dp)
@@ -41,37 +42,39 @@ fun RecipeDetailScreen(onBackClick: () -> Unit) {
             )
         }
 
+        Spacer(Modifier.height(12.dp))
+
         Box(
-            Modifier
+            modifier = Modifier
                 .fillMaxWidth()
-                .height(130.dp)
-                .background(Color(0xFF1F2937), RoundedCornerShape(14.dp)),
-            contentAlignment = androidx.compose.ui.Alignment.Center
+                .height(150.dp)
+                .background(Color(0xFF1F2937), RoundedCornerShape(18.dp)),
+            contentAlignment = Alignment.Center
         ) {
-            Text("Bild", color = Color.White)
+            Text("🥞", fontSize = 52.sp)
         }
 
         Spacer(Modifier.height(22.dp))
 
         Text("Protein Pancakes", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text("⭐ 4,8 (128)        ◷ 35 min", color = Color.White, fontSize = 12.sp)
+        Text("⭐ 4,8 (128)   •   35 min", color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(22.dp))
 
         Row(
-            Modifier
+            modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF1F2937), RoundedCornerShape(14.dp))
+                .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
                 .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Nutrient("Kalorien", "520 kcal")
+            Nutrient("Kalorien", "520")
             Nutrient("Protein", "35 g")
-            Nutrient("Kohlenhydrate", "60 g")
+            Nutrient("Carbs", "60 g")
             Nutrient("Fette", "15 g")
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(26.dp))
 
         Text("Zutaten", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
 
@@ -84,21 +87,28 @@ fun RecipeDetailScreen(onBackClick: () -> Unit) {
         Spacer(Modifier.weight(1f))
 
         PrimaryButton("Zu Mahlzeit hinzufügen", onBackClick)
+
+        Spacer(Modifier.height(20.dp))
     }
 }
 
 @Composable
 private fun Nutrient(label: String, value: String) {
-    Column {
-        Text(label, color = Color.White, fontSize = 9.sp)
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, color = Color.White.copy(alpha = 0.65f), fontSize = 9.sp)
         Text(value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
     }
 }
 
 @Composable
 private fun Ingredient(name: String, amount: String) {
-    Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
         Text("●  $name", color = Color.White, fontSize = 13.sp)
-        Text(amount, color = Color.White, fontSize = 13.sp)
+        Text(amount, color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp)
     }
 }

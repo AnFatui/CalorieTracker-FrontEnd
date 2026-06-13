@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -30,6 +31,9 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var passwordRepeat by remember { mutableStateOf("") }
 
+    val canCreateAccount =
+        name.isNotBlank() && email.isNotBlank() && password.isNotBlank() && password == passwordRepeat
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -37,54 +41,56 @@ fun RegisterScreen(
             .padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(70.dp))
+        Spacer(Modifier.height(66.dp))
 
-        Text("Account erstellen", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-        Text("Starte mit deinem persönlichen Tracking.", color = Color.Gray, fontSize = 13.sp)
-
-        Spacer(Modifier.height(45.dp))
-
-        RegisterInput(
-            text = "Name",
-            value = name,
-            keyboardType = KeyboardType.Text,
-            onValueChange = { name = it }
+        Text(
+            "Account erstellen",
+            color = Color.White,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold
         )
 
+        Text(
+            "Starte mit deinem persönlichen Tracking.",
+            color = Color.Gray,
+            fontSize = 13.sp
+        )
+
+        Spacer(Modifier.height(38.dp))
+
+        RegisterInput("Name", name, KeyboardType.Text) { name = it }
         Spacer(Modifier.height(14.dp))
 
-        RegisterInput(
-            text = "E-Mail",
-            value = email,
-            keyboardType = KeyboardType.Email,
-            onValueChange = { email = it }
-        )
-
+        RegisterInput("E-Mail", email, KeyboardType.Email) { email = it }
         Spacer(Modifier.height(14.dp))
 
-        RegisterInput(
-            text = "Passwort",
-            value = password,
-            isPassword = true,
-            keyboardType = KeyboardType.Password,
-            onValueChange = { password = it }
-        )
-
+        RegisterInput("Passwort", password, KeyboardType.Password, true) { password = it }
         Spacer(Modifier.height(14.dp))
 
-        RegisterInput(
-            text = "Passwort bestätigen",
-            value = passwordRepeat,
-            isPassword = true,
-            keyboardType = KeyboardType.Password,
-            onValueChange = { passwordRepeat = it }
+        RegisterInput("Passwort bestätigen", passwordRepeat, KeyboardType.Password, true) {
+            passwordRepeat = it
+        }
+
+        if (passwordRepeat.isNotBlank() && password != passwordRepeat) {
+            Text(
+                text = "Passwörter stimmen nicht überein.",
+                color = Color(0xFFEF4444),
+                fontSize = 11.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            )
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        PrimaryButton(
+            text = "Account erstellen",
+            onClick = onCreateAccountClick,
+            enabled = canCreateAccount
         )
 
-        Spacer(Modifier.height(36.dp))
-
-        PrimaryButton("Account erstellen", onCreateAccountClick)
-
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(26.dp))
 
         Row {
             Text("Schon einen Account? ", color = Color.White, fontSize = 12.sp)
@@ -104,8 +110,8 @@ fun RegisterScreen(
 private fun RegisterInput(
     text: String,
     value: String,
-    isPassword: Boolean = false,
     keyboardType: KeyboardType,
+    isPassword: Boolean = false,
     onValueChange: (String) -> Unit
 ) {
     OutlinedTextField(
@@ -117,7 +123,7 @@ private fun RegisterInput(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp),
+            .height(56.dp),
         shape = RoundedCornerShape(22.dp),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = Color(0xFF1F2937),
@@ -126,6 +132,6 @@ private fun RegisterInput(
             unfocusedIndicatorColor = Color.Transparent,
             cursorColor = Color.White
         ),
-        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White)
+        textStyle = TextStyle(color = Color.White)
     )
 }

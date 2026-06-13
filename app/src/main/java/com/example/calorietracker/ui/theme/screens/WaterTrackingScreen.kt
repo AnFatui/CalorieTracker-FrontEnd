@@ -24,12 +24,8 @@ fun WaterTrackingScreen(
     onStateChange: (AppUiState) -> Unit,
     onBackClick: () -> Unit
 ) {
-    val progress =
-        if (appState.waterGoalMl <= 0 || appState.waterMl <= 0) {
-            0f
-        } else {
-            appState.waterMl.toFloat() / appState.waterGoalMl.toFloat()
-        }
+    val progress = if (appState.waterGoalMl <= 0 || appState.waterMl <= 0) 0f
+    else appState.waterMl.toFloat() / appState.waterGoalMl.toFloat()
 
     Column(
         modifier = Modifier
@@ -40,25 +36,12 @@ fun WaterTrackingScreen(
     ) {
         Spacer(Modifier.height(42.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "←",
-                color = Color.White,
-                fontSize = 30.sp,
-                modifier = Modifier.clickable { onBackClick() }
-            )
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("←", color = Color.White, fontSize = 30.sp, modifier = Modifier.clickable { onBackClick() })
 
             Spacer(Modifier.weight(1f))
 
-            Text(
-                text = "Wasser",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text("Wasser", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
 
             Spacer(Modifier.weight(1f))
         }
@@ -88,19 +71,8 @@ fun WaterTrackingScreen(
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("💧", fontSize = 30.sp)
-
-                Text(
-                    text = "${String.format("%.1f", appState.waterMl / 1000.0)} L",
-                    color = Color.White,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = "/ ${String.format("%.1f", appState.waterGoalMl / 1000.0)} L",
-                    color = Color.Gray,
-                    fontSize = 18.sp
-                )
+                Text("${String.format("%.1f", appState.waterMl / 1000.0)} L", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text("/ ${String.format("%.1f", appState.waterGoalMl / 1000.0)} L", color = Color.Gray, fontSize = 18.sp)
             }
         }
 
@@ -112,24 +84,15 @@ fun WaterTrackingScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             WaterButton("-") {
-                onStateChange(
-                    appState.copy(
-                        waterMl = (appState.waterMl - 250).coerceAtLeast(0)
-                    )
-                )
+                val newWater = (appState.waterMl - 250).coerceAtLeast(0)
+                onStateChange(appState.copy(waterMl = newWater, weeklyWaterMl = updateTodayWater(appState.weeklyWaterMl, newWater)))
             }
 
-            Text(
-                text = "Ziel: ${String.format("%.1f", appState.waterGoalMl / 1000.0)} Liter",
-                color = Color.White
-            )
+            Text("Ziel: ${String.format("%.1f", appState.waterGoalMl / 1000.0)} Liter", color = Color.White)
 
             WaterButton("+") {
-                onStateChange(
-                    appState.copy(
-                        waterMl = appState.waterMl + 250
-                    )
-                )
+                val newWater = appState.waterMl + 250
+                onStateChange(appState.copy(waterMl = newWater, weeklyWaterMl = updateTodayWater(appState.weeklyWaterMl, newWater)))
             }
         }
 
@@ -138,12 +101,12 @@ fun WaterTrackingScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF1F2937), RoundedCornerShape(14.dp))
+                .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text("Erinnerung", color = Color.White)
-            Text("Alle 60 min >", color = Color.White)
+            Text("Alle 60 min >", color = Color.White.copy(alpha = 0.75f))
         }
 
         Spacer(Modifier.height(14.dp))
@@ -152,27 +115,16 @@ fun WaterTrackingScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(170.dp)
-                .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
+                .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
                 .padding(14.dp)
         ) {
-            Text(
-                text = "Verlauf",
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
+            Text("Verlauf", color = Color.White, fontWeight = FontWeight.Bold)
 
             Spacer(Modifier.height(14.dp))
 
-            if (appState.waterMl == 0) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Noch kein Wasser eingetragen.",
-                        color = Color.Gray,
-                        fontSize = 12.sp
-                    )
+            if (appState.weeklyWaterMl.all { it == 0 }) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text("Noch kein Wasser eingetragen.", color = Color.Gray, fontSize = 12.sp)
                 }
             } else {
                 Row(
@@ -182,13 +134,10 @@ fun WaterTrackingScreen(
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.Bottom
                 ) {
-                    WaterDayBar("Mo", 0)
-                    WaterDayBar("Di", 0)
-                    WaterDayBar("Mi", 0)
-                    WaterDayBar("Do", 0)
-                    WaterDayBar("Fr", 0)
-                    WaterDayBar("Sa", 0)
-                    WaterDayBar("So", appState.waterMl)
+                    val days = listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
+                    days.forEachIndexed { index, day ->
+                        WaterDayBar(day, appState.weeklyWaterMl.getOrElse(index) { 0 }, appState.waterGoalMl)
+                    }
                 }
             }
         }
@@ -206,11 +155,15 @@ fun WaterTrackingScreen(
     }
 }
 
+private fun updateTodayWater(values: List<Int>, newWater: Int): List<Int> {
+    val mutable = values.toMutableList()
+    while (mutable.size < 7) mutable.add(0)
+    mutable[6] = newWater
+    return mutable
+}
+
 @Composable
-private fun WaterButton(
-    text: String,
-    onClick: () -> Unit
-) {
+private fun WaterButton(text: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(52.dp)
@@ -218,32 +171,15 @@ private fun WaterButton(
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = text,
-            color = Color.White,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text(text, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
-private fun WaterDayBar(
-    day: String,
-    amountMl: Int
-) {
-    val maxMl = 2500
-    val progress =
-        if (amountMl <= 0) {
-            0f
-        } else {
-            amountMl.toFloat() / maxMl.toFloat()
-        }
+private fun WaterDayBar(day: String, amountMl: Int, goalMl: Int) {
+    val progress = if (amountMl <= 0 || goalMl <= 0) 0f else amountMl.toFloat() / goalMl.toFloat()
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Bottom
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
         Box(
             modifier = Modifier
                 .width(18.dp)
@@ -262,10 +198,6 @@ private fun WaterDayBar(
 
         Spacer(Modifier.height(6.dp))
 
-        Text(
-            text = day,
-            color = Color.White,
-            fontSize = 10.sp
-        )
+        Text(day, color = Color.White, fontSize = 10.sp)
     }
 }

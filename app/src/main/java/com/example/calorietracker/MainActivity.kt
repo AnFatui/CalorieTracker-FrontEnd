@@ -5,9 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
+import com.example.calorietracker.ui.theme.AppUiState
 import com.example.calorietracker.ui.theme.CalorieTrackerTheme
 import com.example.calorietracker.ui.theme.screens.*
-import com.example.calorietracker.ui.theme.AppUiState
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,6 +18,7 @@ class MainActivity : ComponentActivity() {
             CalorieTrackerTheme {
                 var currentScreen by remember { mutableStateOf(AppScreen.Login) }
                 var appState by remember { mutableStateOf(AppUiState()) }
+                var selectedMealTypeForAdd by remember { mutableStateOf<String?>(null) }
 
                 when (currentScreen) {
                     AppScreen.Login -> LoginScreen(
@@ -39,6 +40,10 @@ class MainActivity : ComponentActivity() {
                     AppScreen.Home -> HomeScreen(
                         appState = appState,
                         onMealsClick = { currentScreen = AppScreen.Meals },
+                        onAddMealClick = {
+                            selectedMealTypeForAdd = null
+                            currentScreen = AppScreen.AddMeal
+                        },
                         onStatisticsClick = { currentScreen = AppScreen.Statistics },
                         onProfileClick = { currentScreen = AppScreen.Profile },
                         onWaterClick = { currentScreen = AppScreen.WaterTracking },
@@ -46,14 +51,23 @@ class MainActivity : ComponentActivity() {
                     )
 
                     AppScreen.Meals -> MealsScreen(
+                        appState = appState,
                         onHomeClick = { currentScreen = AppScreen.Home },
                         onStatisticsClick = { currentScreen = AppScreen.Statistics },
                         onProfileClick = { currentScreen = AppScreen.Profile },
-                        onAddMealClick = { currentScreen = AppScreen.AddMeal },
+                        onAddMealClick = { mealType ->
+                            selectedMealTypeForAdd = mealType
+                            currentScreen = AppScreen.AddMeal
+                        },
+                        onBottomAddClick = {
+                            selectedMealTypeForAdd = null
+                            currentScreen = AppScreen.AddMeal
+                        },
                         onRecipeClick = { currentScreen = AppScreen.RecipeDetail }
                     )
 
                     AppScreen.Recipes -> RecipesScreen(
+                        onBackClick = { currentScreen = AppScreen.AddMeal },
                         onRecipeClick = { currentScreen = AppScreen.RecipeDetail }
                     )
 
@@ -63,8 +77,10 @@ class MainActivity : ComponentActivity() {
 
                     AppScreen.AddMeal -> AddMealScreen(
                         appState = appState,
+                        selectedMealType = selectedMealTypeForAdd,
                         onStateChange = { appState = it },
-                        onBackClick = { currentScreen = AppScreen.Meals }
+                        onBackClick = { currentScreen = AppScreen.Meals },
+                        onRecipesClick = { currentScreen = AppScreen.Recipes }
                     )
 
                     AppScreen.Statistics -> StatisticsScreen(
@@ -88,10 +104,16 @@ class MainActivity : ComponentActivity() {
                     )
 
                     AppScreen.Profile -> ProfileScreen(
+                        appState = appState,
+                        onStateChange = { appState = it },
                         onHomeClick = { currentScreen = AppScreen.Home },
                         onMealsClick = { currentScreen = AppScreen.Meals },
                         onStatisticsClick = { currentScreen = AppScreen.Statistics },
-                        onLogoutClick = { currentScreen = AppScreen.Login }
+                        onLogoutClick = {
+                            appState = AppUiState()
+                            selectedMealTypeForAdd = null
+                            currentScreen = AppScreen.Login
+                        }
                     )
                 }
             }
