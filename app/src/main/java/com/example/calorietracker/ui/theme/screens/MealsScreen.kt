@@ -6,25 +6,30 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.calorietracker.ui.theme.AppUiState
+import com.example.calorietracker.ui.theme.MealEntry
 import com.example.calorietracker.ui.theme.components.AppBottomBar
 
 @Composable
 fun MealsScreen(
+    appState: AppUiState,
     onHomeClick: () -> Unit,
     onStatisticsClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onAddMealClick: () -> Unit,
+    onAddMealClick: (String) -> Unit,
+    onBottomAddClick: () -> Unit,
     onRecipeClick: () -> Unit
 ) {
     var selectedDay by remember { mutableStateOf("Mo") }
 
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
             .padding(horizontal = 20.dp)
@@ -43,71 +48,144 @@ fun MealsScreen(
             DateBox("FR\n24", selectedDay == "Fr") { selectedDay = "Fr" }
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(24.dp))
 
-        MealBox("Frühstück", "0 kcal", "Noch keine Mahlzeit eingetragen", onAddMealClick, onRecipeClick)
-        MealBox("Mittagessen", "0 kcal", "Noch keine Mahlzeit eingetragen", onAddMealClick, onRecipeClick)
-        MealBox("Abendessen", "0 kcal", "Noch keine Mahlzeit eingetragen", onAddMealClick, onRecipeClick)
-        MealBox("Snacks", "0 kcal", "Noch keine Mahlzeit eingetragen", onAddMealClick, onRecipeClick)
+        MealSection(
+            title = "Frühstück",
+            meals = appState.meals.filter { it.mealType == "Frühstück" },
+            onAddClick = { onAddMealClick("Frühstück") },
+            onRecipeClick = onRecipeClick
+        )
+
+        MealSection(
+            title = "Mittagessen",
+            meals = appState.meals.filter { it.mealType == "Mittagessen" },
+            onAddClick = { onAddMealClick("Mittagessen") },
+            onRecipeClick = onRecipeClick
+        )
+
+        MealSection(
+            title = "Abendessen",
+            meals = appState.meals.filter { it.mealType == "Abendessen" },
+            onAddClick = { onAddMealClick("Abendessen") },
+            onRecipeClick = onRecipeClick
+        )
+
+        MealSection(
+            title = "Snacks",
+            meals = appState.meals.filter { it.mealType == "Snacks" },
+            onAddClick = { onAddMealClick("Snacks") },
+            onRecipeClick = onRecipeClick
+        )
 
         Spacer(Modifier.weight(1f))
 
-        AppBottomBar("Meals", onHomeClick, {}, onAddMealClick, onStatisticsClick, onProfileClick)
+        AppBottomBar(
+            selected = "Meals",
+            onHomeClick = onHomeClick,
+            onMealsClick = {},
+            onAddClick = onBottomAddClick,
+            onStatisticsClick = onStatisticsClick,
+            onProfileClick = onProfileClick
+        )
     }
 }
 
 @Composable
 private fun DateBox(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
-        Modifier
+        modifier = Modifier
             .size(48.dp)
             .background(
                 if (selected) Color(0xFF22C55E) else Color.Transparent,
                 RoundedCornerShape(12.dp)
             )
             .clickable { onClick() },
-        contentAlignment = androidx.compose.ui.Alignment.Center
+        contentAlignment = Alignment.Center
     ) {
-        Text(text, color = Color.White, fontSize = 11.sp)
+        Text(text, color = if (selected) Color.Black else Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
-private fun MealBox(
+private fun MealSection(
     title: String,
-    kcal: String,
-    meal: String,
-    onAdd: () -> Unit,
-    onRecipe: () -> Unit
+    meals: List<MealEntry>,
+    onAddClick: () -> Unit,
+    onRecipeClick: () -> Unit
 ) {
+    val calories = meals.sumOf { it.calories }
+
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 14.dp)
-            .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
+            .padding(bottom = 12.dp)
+            .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
             .padding(14.dp)
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
                 Text(title, color = Color.White, fontWeight = FontWeight.Bold)
-                Text(kcal, color = Color.White, fontSize = 11.sp)
+                Text("$calories kcal", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
             }
 
             Text(
                 "+",
                 color = Color.White,
-                fontSize = 22.sp,
-                modifier = Modifier.clickable { onAdd() }
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onAddClick() }
             )
         }
 
         Spacer(Modifier.height(10.dp))
 
-        Text(
-            "Bild        $meal",
-            color = Color.White,
-            fontSize = 12.sp,
-            modifier = Modifier.clickable { onRecipe() }
-        )
+        if (meals.isEmpty()) {
+            Text(
+                text = "Noch keine Mahlzeit eingetragen",
+                color = Color.White.copy(alpha = 0.55f),
+                fontSize = 12.sp
+            )
+        } else {
+            meals.forEach { meal ->
+                MealRow(meal = meal, onRecipeClick = onRecipeClick)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MealRow(
+    meal: MealEntry,
+    onRecipeClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .clickable { onRecipeClick() },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .background(Color(0xFF374151), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("🍽", fontSize = 18.sp)
+        }
+
+        Spacer(Modifier.width(10.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(meal.name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "${meal.protein}g Protein • ${meal.carbs}g Carbs • ${meal.fat}g Fett",
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 10.sp
+            )
+        }
+
+        Text("${meal.calories} kcal", color = Color.White, fontSize = 11.sp)
     }
 }

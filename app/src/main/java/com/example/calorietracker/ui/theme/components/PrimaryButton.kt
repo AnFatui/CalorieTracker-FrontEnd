@@ -18,22 +18,23 @@ import androidx.compose.ui.unit.dp
 fun PrimaryButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(52.dp)
             .background(
-                color = Color(0xFF22C55E),
+                color = if (enabled) Color(0xFF22C55E) else Color(0xFF374151),
                 shape = RoundedCornerShape(18.dp)
             )
-            .clickable { onClick() },
+            .clickable(enabled = enabled) { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            color = Color.White,
+            color = if (enabled) Color.Black else Color.White.copy(alpha = 0.6f),
             fontWeight = FontWeight.Bold
         )
     }

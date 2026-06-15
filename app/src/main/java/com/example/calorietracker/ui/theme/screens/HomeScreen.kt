@@ -24,13 +24,13 @@ import com.example.calorietracker.ui.theme.components.TrackingCard
 fun HomeScreen(
     appState: AppUiState,
     onMealsClick: () -> Unit,
+    onAddMealClick: () -> Unit,
     onStatisticsClick: () -> Unit,
     onProfileClick: () -> Unit,
     onWaterClick: () -> Unit,
     onWeightClick: () -> Unit
 ) {
-    val calorieProgress =
-        if (appState.calorieGoal == 0) 0f else appState.calories.toFloat() / appState.calorieGoal.toFloat()
+    val calorieProgress = safeProgress(appState.calories, appState.calorieGoal)
 
     Column(
         modifier = Modifier
@@ -54,24 +54,24 @@ fun HomeScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(128.dp)
-                .background(Color(0xFF1F2937), RoundedCornerShape(16.dp)),
+                .height(132.dp)
+                .background(Color(0xFF1F2937), RoundedCornerShape(18.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Canvas(Modifier.size(86.dp)) {
+            Canvas(Modifier.size(90.dp)) {
                 drawArc(
-                    color = Color(0xFF4B5563),
+                    color = Color(0xFF374151),
                     startAngle = -90f,
                     sweepAngle = 360f,
                     useCenter = false,
                     style = Stroke(9.dp.toPx(), cap = StrokeCap.Round)
                 )
 
-                if (appState.calories > 0) {
+                if (calorieProgress > 0f) {
                     drawArc(
                         color = Color(0xFF22C55E),
                         startAngle = -90f,
-                        sweepAngle = 360f * calorieProgress.coerceIn(0f, 1f),
+                        sweepAngle = 360f * calorieProgress,
                         useCenter = false,
                         style = Stroke(9.dp.toPx(), cap = StrokeCap.Round)
                     )
@@ -79,18 +79,8 @@ fun HomeScreen(
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "${appState.calories}",
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = "/ ${appState.calorieGoal} kcal",
-                    color = Color.Gray,
-                    fontSize = 11.sp
-                )
+                Text("${appState.calories}", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                Text("/ ${appState.calorieGoal} kcal", color = Color.Gray, fontSize = 11.sp)
             }
 
             Text(
@@ -107,46 +97,45 @@ fun HomeScreen(
 
         Text("Makronährstoffe", color = Color.White, fontWeight = FontWeight.Bold)
 
+        Spacer(Modifier.height(8.dp))
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(122.dp)
-                .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
+                .height(126.dp)
+                .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
                 .padding(10.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
             MacroCircle(
-                title = "Protein",
-                value = "${appState.protein}",
-                subtitle = "${appState.protein} / ${appState.proteinGoal} g",
-                color = Color(0xFFEF4444),
-                progress = safeProgress(appState.protein, appState.proteinGoal)
+                "Protein",
+                "${appState.protein}",
+                "${appState.protein} / ${appState.proteinGoal} g",
+                Color(0xFFEF4444),
+                safeProgress(appState.protein, appState.proteinGoal)
             )
 
             MacroCircle(
-                title = "Kohlenhydrate",
-                value = "${appState.carbs}",
-                subtitle = "${appState.carbs} / ${appState.carbsGoal} g",
-                color = Color(0xFFF97316),
-                progress = safeProgress(appState.carbs, appState.carbsGoal)
+                "Carbs",
+                "${appState.carbs}",
+                "${appState.carbs} / ${appState.carbsGoal} g",
+                Color(0xFFF97316),
+                safeProgress(appState.carbs, appState.carbsGoal)
             )
 
             MacroCircle(
-                title = "Fette",
-                value = "${appState.fat}",
-                subtitle = "${appState.fat} / ${appState.fatGoal} g",
-                color = Color(0xFFFACC15),
-                progress = safeProgress(appState.fat, appState.fatGoal)
+                "Fette",
+                "${appState.fat}",
+                "${appState.fat} / ${appState.fatGoal} g",
+                Color(0xFFFACC15),
+                safeProgress(appState.fat, appState.fatGoal)
             )
         }
 
         Spacer(Modifier.height(22.dp))
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
             TrackingCard(
                 title = "Wasser",
                 value = "${formatLiter(appState.waterMl)} / ${formatLiter(appState.waterGoalMl)} L",
@@ -173,15 +162,15 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(78.dp)
-                .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
+                .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
                 .clickable { onWeightClick() }
                 .padding(12.dp)
         ) {
             Text("Gewicht", color = Color.White, fontWeight = FontWeight.Bold)
 
             Text(
-                text = "Aktuell: ${if (appState.currentWeight.isBlank()) "-" else appState.currentWeight + " kg"}   Ziel: ${if (appState.targetWeight.isBlank()) "-" else appState.targetWeight + " kg"}",
-                color = Color.White,
+                text = "Aktuell: ${appState.currentWeight.ifBlank { "-" }} kg   Ziel: ${appState.targetWeight.ifBlank { "-" }} kg",
+                color = Color.White.copy(alpha = 0.8f),
                 fontSize = 11.sp,
                 modifier = Modifier.align(Alignment.CenterStart)
             )
@@ -195,7 +184,7 @@ fun HomeScreen(
             selected = "Home",
             onHomeClick = {},
             onMealsClick = onMealsClick,
-            onAddClick = onMealsClick,
+            onAddClick = onAddMealClick,
             onStatisticsClick = onStatisticsClick,
             onProfileClick = onProfileClick
         )

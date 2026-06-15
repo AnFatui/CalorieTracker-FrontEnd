@@ -23,21 +23,24 @@ fun MacroCircle(
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(contentAlignment = Alignment.Center) {
-            Canvas(modifier = Modifier.size(72.dp)) {
+            Canvas(modifier = Modifier.size(76.dp)) {
                 drawArc(
-                    color = Color(0xFF4B5563),
+                    color = Color(0xFF374151),
                     startAngle = -90f,
                     sweepAngle = 360f,
                     useCenter = false,
                     style = Stroke(8.dp.toPx(), cap = StrokeCap.Round)
                 )
-                drawArc(
-                    color = color,
-                    startAngle = -90f,
-                    sweepAngle = 360f * progress,
-                    useCenter = false,
-                    style = Stroke(8.dp.toPx(), cap = StrokeCap.Round)
-                )
+
+                if (progress > 0f) {
+                    drawArc(
+                        color = color,
+                        startAngle = -90f,
+                        sweepAngle = 360f * progress.coerceIn(0f, 1f),
+                        useCenter = false,
+                        style = Stroke(8.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                }
             }
 
             Text(
@@ -48,7 +51,19 @@ fun MacroCircle(
             )
         }
 
-        Text(title, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Text(subtitle, color = Color.White.copy(alpha = 0.75f), fontSize = 10.sp)
+        Spacer(Modifier.height(6.dp))
+
+        Text(
+            text = title,
+            color = Color.White,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            text = subtitle,
+            color = Color.White.copy(alpha = 0.65f),
+            fontSize = 9.sp
+        )
     }
 }

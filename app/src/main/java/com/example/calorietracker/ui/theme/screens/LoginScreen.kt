@@ -6,13 +6,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -29,6 +32,7 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -37,26 +41,33 @@ fun LoginScreen(
             .padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(70.dp))
+        Spacer(Modifier.height(72.dp))
 
         Box(
             modifier = Modifier
-                .size(92.dp)
-                .background(Color(0xFF1F2937), RoundedCornerShape(24.dp)),
+                .size(96.dp)
+                .background(Color(0xFF1F2937), RoundedCornerShape(26.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text("🔥", fontSize = 42.sp)
+            Text("🔥", fontSize = 44.sp)
         }
 
+        Spacer(Modifier.height(10.dp))
+
         Text(
-            text = "Name der App",
+            text = "CalorieTracker",
             color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 8.dp)
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.height(55.dp))
+        Text(
+            text = "Track your goals",
+            color = Color.White.copy(alpha = 0.6f),
+            fontSize = 12.sp
+        )
+
+        Spacer(Modifier.height(50.dp))
 
         LoginInputField(
             text = "E-Mail",
@@ -65,7 +76,7 @@ fun LoginScreen(
             onValueChange = { email = it }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
         LoginInputField(
             text = "Passwort",
@@ -77,68 +88,92 @@ fun LoginScreen(
 
         Text(
             text = "Passwort vergessen?",
-            color = Color.White,
+            color = Color.White.copy(alpha = 0.75f),
             fontSize = 10.sp,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 6.dp),
+                .padding(top = 7.dp)
+                .clickable {
+                    showForgotPasswordDialog = true
+                },
             textAlign = TextAlign.End
         )
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(Modifier.height(46.dp))
 
         PrimaryButton(
             text = "Einloggen",
-            onClick = onLoginClick
+            onClick = onLoginClick,
+            enabled = email.isNotBlank() && password.isNotBlank()
         )
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(Modifier.height(28.dp))
 
         Text(
             text = "oder weitermachen mit",
-            color = Color.White,
+            color = Color.White.copy(alpha = 0.7f),
             fontSize = 11.sp
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(Modifier.height(22.dp))
 
         Box(
             modifier = Modifier
-                .width(180.dp)
+                .width(190.dp)
                 .height(54.dp)
-                .border(
-                    width = 1.dp,
-                    color = Color(0xFF4B5563),
-                    shape = RoundedCornerShape(18.dp)
-                )
-                .clickable { },
+                .border(1.dp, Color(0xFF4B5563), RoundedCornerShape(18.dp))
+                .clickable {
+                    // Google Login wird später angebunden.
+                },
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "G  Google",
+                text = "G   Google",
                 color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
         }
 
-        Spacer(modifier = Modifier.height(42.dp))
+        Spacer(Modifier.weight(1f))
 
-        Row {
-            Text(
-                text = "Noch keinen Account? ",
-                color = Color.White,
-                fontSize = 12.sp
-            )
+        Row(modifier = Modifier.padding(bottom = 32.dp)) {
+            Text("Noch keinen Account? ", color = Color.White, fontSize = 12.sp)
 
             Text(
-                text = "Registrieren",
+                "Registrieren",
                 color = Color(0xFF22C55E),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.clickable { onRegisterClick() }
             )
         }
+    }
+
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showForgotPasswordDialog = false
+            },
+            containerColor = Color(0xFF1F2937),
+            titleContentColor = Color.White,
+            textContentColor = Color.White.copy(alpha = 0.8f),
+            title = {
+                Text("Passwort zurücksetzen")
+            },
+            text = {
+                Text("Diese Funktion wird später ergänzt.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showForgotPasswordDialog = false
+                    }
+                ) {
+                    Text("OK", color = Color(0xFF22C55E))
+                }
+            }
+        )
     }
 }
 
@@ -153,19 +188,13 @@ private fun LoginInputField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = {
-            Text(
-                text = text,
-                color = Color.Gray,
-                fontSize = 13.sp
-            )
-        },
+        placeholder = { Text(text, color = Color.Gray, fontSize = 13.sp) },
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp),
+            .height(56.dp),
         shape = RoundedCornerShape(22.dp),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = Color(0xFF1F2937),
@@ -174,6 +203,6 @@ private fun LoginInputField(
             unfocusedIndicatorColor = Color.Transparent,
             cursorColor = Color.White
         ),
-        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White)
+        textStyle = TextStyle(color = Color.White)
     )
 }

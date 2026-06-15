@@ -1,7 +1,9 @@
 package com.example.calorietracker.ui.theme.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,13 +32,20 @@ fun AppBottomBar(
         BottomItem("⌂", "Home", selected == "Home", onHomeClick)
         BottomItem("🍴", "Mahlzeit", selected == "Meals", onMealsClick)
 
-        Text(
-            text = "+",
-            color = Color.White,
-            fontSize = 34.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.clickable { onAddClick() }
-        )
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .background(Color(0xFF22C55E), CircleShape)
+                .clickable { onAddClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "+",
+                color = Color.Black,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
         BottomItem("▥", "Statistik", selected == "Statistics", onStatisticsClick)
         BottomItem("♡", "Profil", selected == "Profile", onProfileClick)
@@ -50,13 +59,13 @@ private fun BottomItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val color = if (selected) Color(0xFF22C55E) else Color.White
+    val color = if (selected) Color(0xFF22C55E) else Color.White.copy(alpha = 0.75f)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable { onClick() }
     ) {
-        Text(icon, color = color, fontSize = 26.sp)
+        Text(icon, color = color, fontSize = 24.sp)
         Text(label, color = color, fontSize = 10.sp)
     }
 }
