@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -19,17 +20,30 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.calorietracker.ui.theme.components.PrimaryButton
+import com.example.calorietracker.ui.viewmodel.RegisterViewModel
 
 @Composable
 fun RegisterScreen(
-    onCreateAccountClick: () -> Unit,
-    onBackToLoginClick: () -> Unit
+    onCreateAccountSuccess: () -> Unit,
+    onBackToLoginClick: () -> Unit,
+    onShowMessage: (String) -> Unit,
+    viewModel: RegisterViewModel = viewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordRepeat by remember { mutableStateOf("") }
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            onShowMessage(it)
+            viewModel.clearError()
+        }
+    }
 
     val canCreateAccount =
         name.isNotBlank() && email.isNotBlank() && password.isNotBlank() && password == passwordRepeat
@@ -42,38 +56,31 @@ fun RegisterScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(66.dp))
-
         Text(
             "Account erstellen",
             color = Color.White,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
         )
-
-        Text(
-            "Starte mit deinem persönlichen Tracking.",
-            color = Color.Gray,
-            fontSize = 13.sp
-        )
-
+        Text("Starte mit deinem persönlichen Tracking.", color = Color.Gray, fontSize = 13.sp)
         Spacer(Modifier.height(38.dp))
 
-        RegisterInput("Name", name, KeyboardType.Text) { name = it }
+        RegisterInput("Name", name, KeyboardType.Text) { name = it.trim() }
         Spacer(Modifier.height(14.dp))
-
-        RegisterInput("E-Mail", email, KeyboardType.Email) { email = it }
+        RegisterInput("E-Mail", email, KeyboardType.Email) { email = it.trim() }
         Spacer(Modifier.height(14.dp))
-
         RegisterInput("Passwort", password, KeyboardType.Password, true) { password = it }
         Spacer(Modifier.height(14.dp))
-
-        RegisterInput("Passwort bestätigen", passwordRepeat, KeyboardType.Password, true) {
-            passwordRepeat = it
-        }
+        RegisterInput(
+            "Passwort bestätigen",
+            passwordRepeat,
+            KeyboardType.Password,
+            true
+        ) { passwordRepeat = it }
 
         if (passwordRepeat.isNotBlank() && password != passwordRepeat) {
             Text(
-                text = "Passwörter stimmen nicht überein.",
+                "Passwörter stimmen nicht überein.",
                 color = Color(0xFFEF4444),
                 fontSize = 11.sp,
                 modifier = Modifier
@@ -84,24 +91,27 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(32.dp))
 
-        PrimaryButton(
-            text = "Account erstellen",
-            onClick = onCreateAccountClick,
-            enabled = canCreateAccount
-        )
+        if (uiState.isLoading) {
+            CircularProgressIndicator(color = Color(0xFF22C55E))
+        } else {
+            PrimaryButton(
+                text = "Account erstellen",
+                onClick = {
+                    viewModel.signUp(name, email, password, onCreateAccountSuccess)
+                },
+                enabled = canCreateAccount
+            )
+        }
 
         Spacer(Modifier.height(26.dp))
-
         Row {
             Text("Schon einen Account? ", color = Color.White, fontSize = 12.sp)
-
             Text(
                 "Einloggen",
                 color = Color(0xFF22C55E),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { onBackToLoginClick() }
-            )
+                modifier = Modifier.clickable { onBackToLoginClick() })
         }
     }
 }

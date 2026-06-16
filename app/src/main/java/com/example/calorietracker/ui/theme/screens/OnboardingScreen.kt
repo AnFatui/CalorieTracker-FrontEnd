@@ -5,12 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,19 +16,31 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.calorietracker.ui.theme.AppUiState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.calorietracker.ui.theme.components.PrimaryButton
+import com.example.calorietracker.ui.viewmodel.OnboardingViewModel
 
 @Composable
 fun OnboardingScreen(
-    appState: AppUiState,
-    onStateChange: (AppUiState) -> Unit,
-    onContinueClick: () -> Unit
+    onContinueClick: () -> Unit,
+    onShowMessage: (String) -> Unit,
+    viewModel: OnboardingViewModel = viewModel()
 ) {
-    val isWeightMaintenance = appState.selectedGoal == "Gewicht halten"
-    val canContinue = appState.selectedGoal.isNotBlank() &&
-            appState.currentWeight.isNotBlank() &&
-            (isWeightMaintenance || appState.targetWeight.isNotBlank())
+    val uiState by viewModel.uiState.collectAsState()
+    
+    val isWeightMaintenance = uiState.selectedGoal == "Gewicht halten"
+    val canContinue = uiState.selectedGoal.isNotBlank() &&
+            uiState.currentWeight.isNotBlank() &&
+            (isWeightMaintenance || uiState.targetWeight.isNotBlank()) &&
+            !uiState.isLoading
+
+    // Observe error state
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            onShowMessage(it)
+            viewModel.clearError()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -69,20 +77,21 @@ fun OnboardingScreen(
         Spacer(Modifier.height(14.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            GoalBox("Abnehmen", appState.selectedGoal == "Abnehmen", Modifier.weight(1f)) {
-                onStateChange(appState.copy(selectedGoal = "Abnehmen"))
+            GoalBox("Abnehmen", uiState.selectedGoal == "Abnehmen", Modifier.weight(1f)) {
+                viewModel.updateGoal("Abnehmen")
             }
 
-            GoalBox("Muskeln\naufbauen", appState.selectedGoal == "Muskeln aufbauen", Modifier.weight(1f)) {
-                onStateChange(appState.copy(selectedGoal = "Muskeln aufbauen"))
+            GoalBox("Muskeln\naufbauen", uiState.selectedGoal == "Muskeln aufbauen", Modifier.weight(1f)) {
+                viewModel.updateGoal("Muskeln aufbauen")
             }
 
-            GoalBox("Gewicht\nhalten", appState.selectedGoal == "Gewicht halten", Modifier.weight(1f)) {
-                onStateChange(appState.copy(selectedGoal = "Gewicht halten", targetWeight = ""))
+            GoalBox("Gewicht\nhalten", uiState.selectedGoal == "Gewicht halten", Modifier.weight(1f)) {
+                viewModel.updateGoal("Gewicht halten")
+                viewModel.updateTargetWeight("")
             }
         }
 
-        if (!isWeightMaintenance && appState.selectedGoal.isNotBlank()) {
+        if (!isWeightMaintenance && uiState.selectedGoal.isNotBlank()) {
             Spacer(Modifier.height(28.dp))
 
             Text(
@@ -93,17 +102,17 @@ fun OnboardingScreen(
             )
 
             Text(
-                "${String.format("%.1f", appState.weeklyGoal)} kg pro Woche",
+                "${String.format("%.1f", uiState.weeklyGoal)} kg pro Woche",
                 color = Color.White.copy(alpha = 0.85f),
                 fontSize = 13.sp,
                 modifier = Modifier.fillMaxWidth()
             )
 
             Slider(
-                value = appState.weeklyGoal,
-                onValueChange = { onStateChange(appState.copy(weeklyGoal = it)) },
-                valueRange = 0.1f..1.5f,
-                steps = 13,
+                value = uiState.weeklyGoal.toFloat(),
+                onValueChange = { viewModel.updateWeeklyGoal(it.toDouble()) },
+                valueRange = 0.1f..1.0f,
+                steps = 9,
                 colors = SliderDefaults.colors(
                     thumbColor = Color(0xFF22C55E),
                     activeTrackColor = Color(0xFF22C55E),
@@ -117,34 +126,42 @@ fun OnboardingScreen(
         if (isWeightMaintenance) {
             WeightInputBox(
                 label = "Aktuelles Gewicht",
-                value = appState.currentWeight,
+                value = uiState.currentWeight,
                 placeholder = "z.B. 70",
                 modifier = Modifier.fillMaxWidth(),
-                onValueChange = { onStateChange(appState.copy(currentWeight = it)) }
+                onValueChange = { viewModel.updateCurrentWeight(it) }
             )
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(18.dp), modifier = Modifier.fillMaxWidth()) {
                 WeightInputBox(
                     label = "Aktuelles Gewicht",
-                    value = appState.currentWeight,
+                    value = uiState.currentWeight,
                     placeholder = "z.B. 70",
                     modifier = Modifier.weight(1f),
-                    onValueChange = { onStateChange(appState.copy(currentWeight = it)) }
+                    onValueChange = { viewModel.updateCurrentWeight(it) }
                 )
 
                 WeightInputBox(
                     label = "Zielgewicht",
-                    value = appState.targetWeight,
+                    value = uiState.targetWeight,
                     placeholder = "z.B. 65",
                     modifier = Modifier.weight(1f),
-                    onValueChange = { onStateChange(appState.copy(targetWeight = it)) }
+                    onValueChange = { viewModel.updateTargetWeight(it) }
                 )
             }
         }
 
         Spacer(Modifier.weight(1f))
 
-        PrimaryButton("Weiter", onContinueClick, enabled = canContinue)
+        if (uiState.isLoading) {
+            CircularProgressIndicator(color = Color(0xFF22C55E))
+        } else {
+            PrimaryButton(
+                text = "Weiter", 
+                onClick = { viewModel.completeOnboarding(onContinueClick) }, 
+                enabled = canContinue
+            )
+        }
 
         Spacer(Modifier.height(42.dp))
     }

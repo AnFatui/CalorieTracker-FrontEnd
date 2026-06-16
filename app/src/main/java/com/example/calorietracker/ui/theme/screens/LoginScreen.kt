@@ -6,11 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,16 +19,30 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.calorietracker.ui.theme.components.PrimaryButton
+import com.example.calorietracker.ui.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(
-    onLoginClick: () -> Unit,
-    onRegisterClick: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onRegisterClick: () -> Unit,
+    onShowMessage: (String) -> Unit,
+    viewModel: LoginViewModel = viewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
+
+    // Observe error state and show snackbar via the activity's callback
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            onShowMessage(it)
+            viewModel.clearError()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -101,11 +111,17 @@ fun LoginScreen(
 
         Spacer(Modifier.height(46.dp))
 
-        PrimaryButton(
-            text = "Einloggen",
-            onClick = onLoginClick,
-            enabled = email.isNotBlank() && password.isNotBlank()
-        )
+        if (uiState.isLoading) {
+            CircularProgressIndicator(color = Color(0xFF22C55E))
+        } else {
+            PrimaryButton(
+                text = "Einloggen",
+                onClick = {
+                    viewModel.login(email, password, onLoginSuccess)
+                },
+                enabled = email.isNotBlank() && password.isNotBlank()
+            )
+        }
 
         Spacer(Modifier.height(28.dp))
 
