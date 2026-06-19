@@ -25,7 +25,7 @@ import com.example.calorietracker.ui.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (String) -> Unit,
     onRegisterClick: () -> Unit,
     onShowMessage: (String) -> Unit,
     viewModel: LoginViewModel = viewModel()
@@ -111,7 +111,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(46.dp))
 
-        if (uiState.isLoading) {
+        if (uiState.loading) {
             CircularProgressIndicator(color = Color(0xFF22C55E))
         } else {
             PrimaryButton(

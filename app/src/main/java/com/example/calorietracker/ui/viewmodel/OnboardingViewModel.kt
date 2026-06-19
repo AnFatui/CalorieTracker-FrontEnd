@@ -1,80 +1,141 @@
 package com.example.calorietracker.ui.viewmodel
 
-import android.util.Log
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.calorietracker.data.model.AddWeightLogDTO
 import com.example.calorietracker.data.model.Profile
-import com.example.calorietracker.data.model.WeightLog
 import com.example.calorietracker.data.repository.ProfileRepository
 import com.example.calorietracker.data.repository.WeightRepository
-import com.example.calorietracker.providers.SupabaseClientProvider
 import com.example.calorietracker.util.CalorieCalculator
-import io.github.jan.supabase.auth.auth
+import com.example.calorietracker.util.SessionManager
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 data class OnboardingUiState(
+    override val loading: Boolean = false,
+    override val error: String? = null,
+    val displayName: String = "",
+    val username: String = "",
+    val isUsernameTaken: Boolean = false,
+    val isCheckingUsername: Boolean = false,
+    val sex: String = "Männlich",
+    val heightCm: String = "175",
+    val age: String = "25",
     val selectedGoal: String = "",
     val weeklyGoal: Double = 0.5,
     val currentWeight: String = "",
     val targetWeight: String = "",
-    val heightCm: String = "175",
-    val age: String = "25",
-    val sex: String = "Männlich",
     val activityLevel: String = "Moderat aktiv",
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
+) : UiState<OnboardingUiState> {
+    override fun copyFlags(
+        loading: Boolean,
+        error: String?
+    ): OnboardingUiState {
+        return this.copy(loading = loading, error = error)
+    }
+}
 
-class OnboardingViewModel : ViewModel() {
-    private val _uiState = MutableStateFlow(OnboardingUiState())
-    val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
+class OnboardingViewModel(
+    private val profileRepository: ProfileRepository,
+    private val weightRepository: WeightRepository,
+    override val sessionManager: SessionManager
+) : BaseViewModel<OnboardingUiState>() {
+    override val internalUiState = MutableStateFlow(OnboardingUiState())
+    val uiState = internalUiState.asStateFlow()
 
-    private val profileRepository = ProfileRepository()
-    private val weightRepository = WeightRepository()
-    private val TAG = "OnboardingViewModel"
+    override val tag: String = "OnboardingViewModel"
+    private var usernameCheckJob: Job? = null
+
+    fun updateDisplayName(name: String) {
+        internalUiState.update { it.copy(displayName = name) }
+        // Automatische Benutzernamen generieren, wenn er noch leer ist
+        if (internalUiState.value.username.isEmpty()) {
+            val generatedUsername =
+                name.lowercase().replace(" ", "_").filter { it.isLetterOrDigit() || it == '_' }
+            updateUsername(generatedUsername)
+        }
+    }
+
+    fun updateUsername(username: String) {
+        val filteredUsername = username.lowercase().filter { it.isLetterOrDigit() || it == '_' }
+        internalUiState.update { it.copy(username = filteredUsername, isUsernameTaken = false) }
+
+        if (filteredUsername.length >= 3) {
+            checkUsernameAvailability(filteredUsername)
+        }
+    }
+
+    private fun checkUsernameAvailability(username: String) {
+        usernameCheckJob?.cancel()
+        usernameCheckJob = viewModelScope.launch {
+            delay(500) // Debounce
+            internalUiState.update { it.copy(isCheckingUsername = true) }
+            val isTaken = profileRepository.isUsernameTaken(username)
+            internalUiState.update {
+                it.copy(
+                    isUsernameTaken = isTaken,
+                    isCheckingUsername = false
+                )
+            }
+        }
+    }
+
+    fun updateSex(sex: String) {
+        internalUiState.update { it.copy(sex = sex) }
+    }
+
+    fun updateHeight(height: String) {
+        internalUiState.update { it.copy(heightCm = height) }
+    }
+
+    fun updateAge(age: String) {
+        internalUiState.update { it.copy(age = age) }
+    }
 
     fun updateGoal(goal: String) {
-        _uiState.update { it.copy(selectedGoal = goal) }
+        internalUiState.update { it.copy(selectedGoal = goal) }
     }
 
     fun updateWeeklyGoal(value: Double) {
-        _uiState.update { it.copy(weeklyGoal = value) }
+        internalUiState.update { it.copy(weeklyGoal = value) }
     }
 
     fun updateCurrentWeight(weight: String) {
-        _uiState.update { it.copy(currentWeight = weight) }
+        internalUiState.update { it.copy(currentWeight = weight) }
     }
 
     fun updateTargetWeight(weight: String) {
-        _uiState.update { it.copy(targetWeight = weight) }
+        internalUiState.update { it.copy(targetWeight = weight) }
     }
 
+    fun updateActivityLevel(level: String) {
+        internalUiState.update { it.copy(activityLevel = level) }
+    }
+
+    @OptIn(ExperimentalTime::class)
     fun completeOnboarding(onSuccess: () -> Unit) {
-        val state = _uiState.value
-        val userId = SupabaseClientProvider.supabase.auth.currentUserOrNull()?.id
-        if(userId == null) {
-            Log.e(TAG, "Failed to complete onboarding process, current user is null")
-            _uiState.update { it.copy(error = "Failed to complete onboarding process, please try again later") }
-            return
-        }
+        val state = internalUiState.value
+        if (state.isUsernameTaken) return
 
-        _uiState.update { it.copy(isLoading = true) }
-
-        viewModelScope.launch {
-            try {
+        tryAndLogScope {
+            getUserId { userId ->
                 val weight = state.currentWeight.toDoubleOrNull() ?: 0.0
                 val targetWeight = state.targetWeight.toDoubleOrNull() ?: weight
                 val height = state.heightCm.toIntOrNull() ?: 175
-                val age = state.age.toIntOrNull() ?: 25
+                val ageValue = state.age.toIntOrNull() ?: 25
 
-                // 1. Kalorien berechnen
+                val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+                val birthYear = currentYear - ageValue
+
                 val calcResult = CalorieCalculator.calculate(
                     gender = state.sex,
-                    age = age,
+                    age = ageValue,
                     heightCm = height,
                     weightKg = weight,
                     activityLevel = state.activityLevel,
@@ -82,35 +143,35 @@ class OnboardingViewModel : ViewModel() {
                     weeklyGoalKg = state.weeklyGoal
                 )
 
-                // 2. Profil erstellen/updaten
                 val updatedProfile = Profile(
                     id = userId,
+                    username = state.username,
+                    displayName = state.displayName,
+                    birthYear = birthYear,
+                    sex = state.sex,
+                    heightCm = height,
                     selectedGoal = state.selectedGoal,
                     weeklyGoal = state.weeklyGoal,
                     targetWeightKg = targetWeight,
-                    heightCm = height,
                     calorieGoal = calcResult.calories,
                     proteinGoal = calcResult.protein,
                     carbsGoal = calcResult.carbs,
-                    fatGoal = calcResult.fat
+                    fatGoal = calcResult.fat,
+                    activityLevel = state.activityLevel,
+                    onboardingDone = true
                 )
+
                 profileRepository.upsertProfile(updatedProfile)
-
-                // 3. Erstes Gewicht loggen
                 weightRepository.addWeightLog(
-                    WeightLog(userId = userId, weightKg = weight)
+                    AddWeightLogDTO(
+                        userId = userId,
+                        weightKg = weight,
+                        loggedAt = Clock.System.now()
+                    )
                 )
 
-                _uiState.update { it.copy(isLoading = false) }
                 onSuccess()
-            } catch (e: Exception) {
-                Log.e(TAG, "Onboarding Fehler", e)
-                _uiState.update { it.copy(isLoading = false, error = e.localizedMessage) }
             }
         }
-    }
-
-    fun clearError() {
-        _uiState.update { it.copy(error = null) }
     }
 }

@@ -3,13 +3,26 @@ package com.example.calorietracker.ui.theme.screens
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -19,18 +32,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.calorietracker.ui.theme.AppUiState
-import com.example.calorietracker.ui.theme.WeightEntry
 import com.example.calorietracker.ui.theme.components.AppBottomBar
+import com.example.calorietracker.ui.viewmodel.UserViewModel
+import com.example.calorietracker.ui.viewmodel.WeightTrackingViewModel
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun WeightTrackingScreen(
-    appState: AppUiState,
-    onStateChange: (AppUiState) -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    viewModel: WeightTrackingViewModel
 ) {
-    var newWeight by remember { mutableStateOf("") }
-    val hasWeight = appState.currentWeight.isNotBlank()
+    val dataState by viewModel.dataUiState.collectAsState()
+    var newWeightEntry by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -40,8 +54,15 @@ fun WeightTrackingScreen(
     ) {
         Spacer(Modifier.height(42.dp))
 
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("←", color = Color.White, fontSize = 30.sp, modifier = Modifier.clickable { onBackClick() })
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                "←",
+                color = Color.White,
+                fontSize = 30.sp,
+                modifier = Modifier.clickable { onBackClick() })
 
             Text("Gewicht", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
 
@@ -51,24 +72,21 @@ fun WeightTrackingScreen(
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.clickable {
-                    if (newWeight.isNotBlank()) {
-                        val newEntry = WeightEntry(newWeight, "Heute")
-                        onStateChange(
-                            appState.copy(
-                                currentWeight = newWeight,
-                                weightEntries = appState.weightEntries + newEntry
-                            )
-                        )
-                        newWeight = ""
+                    if (newWeightEntry.isNotBlank() && newWeightEntry.toDoubleOrNull() != null) {
+                        val entry = newWeightEntry.toDouble()
+                        viewModel.addWeightLog(entry)
                     }
                 }
             )
         }
 
         Spacer(Modifier.height(28.dp))
+        val weightText: String =
+            if (dataState.currentWeightKg != null) "${dataState.currentWeightKg} KG"
+            else "Kein Gewichtsdaten vorhanden"
 
         Text(
-            text = if (hasWeight) "${appState.currentWeight} kg" else "Noch kein Gewicht",
+            text = weightText,
             color = Color.White,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
@@ -77,7 +95,7 @@ fun WeightTrackingScreen(
         )
 
         Text(
-            text = if (appState.targetWeight.isBlank()) "Kein Zielgewicht gesetzt" else "Zielgewicht: ${appState.targetWeight} kg",
+            text = "Zielgewicht: ${dataState.targetWeightKg} kg",
             color = Color(0xFF22C55E),
             fontSize = 12.sp,
             modifier = Modifier.fillMaxWidth(),
@@ -87,8 +105,10 @@ fun WeightTrackingScreen(
         Spacer(Modifier.height(24.dp))
 
         OutlinedTextField(
-            value = newWeight,
-            onValueChange = { input -> newWeight = input.filter { it.isDigit() || it == ',' || it == '.' } },
+            value = newWeightEntry,
+            onValueChange = { input ->
+                newWeightEntry = input.filter { it.isDigit() || it == ',' || it == '.' }
+            },
             placeholder = { Text("Neues Gewicht eintragen", color = Color.Gray) },
             suffix = { Text("kg", color = Color.White) },
             singleLine = true,
@@ -114,10 +134,14 @@ fun WeightTrackingScreen(
                 .background(Color(0xFF050505), RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center
         ) {
-            if (appState.weightEntries.isEmpty()) {
+            if (dataState.weightLogs.isEmpty()) {
                 Text("Noch kein Gewichtsverlauf vorhanden.", color = Color.Gray, fontSize = 12.sp)
             } else {
-                Canvas(Modifier.fillMaxSize().padding(18.dp)) {
+                Canvas(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(18.dp)
+                ) {
                     val points = listOf(
                         Offset(10f, size.height * 0.65f),
                         Offset(size.width * 0.35f, size.height * 0.55f),
@@ -142,12 +166,15 @@ fun WeightTrackingScreen(
                 .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
                 .padding(14.dp)
         ) {
-            if (appState.weightEntries.isEmpty()) {
+            if (dataState.weightLogs.isEmpty()) {
                 WeightRow("Aktueller Eintrag", "-")
-                WeightRow("Zielgewicht", if (appState.targetWeight.isBlank()) "-" else "${appState.targetWeight} kg")
+                WeightRow(
+                    "Zielgewicht",
+                    if (dataState.targetWeightKg == null) "-" else "${dataState.targetWeightKg} kg"
+                )
             } else {
-                appState.weightEntries.reversed().forEach {
-                    WeightRow(it.dateLabel, "${it.value} kg")
+                dataState.weightLogs.reversed().forEach {
+                    WeightRow(it.loggedAt.toString(), "${it.weightKg} kg")
                 }
             }
         }

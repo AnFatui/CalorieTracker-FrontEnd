@@ -4,22 +4,38 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.calorietracker.ui.theme.AppUiState
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.calorietracker.data.repository.ProfileRepository
 import com.example.calorietracker.ui.theme.CalorieTrackerTheme
-import com.example.calorietracker.ui.theme.screens.*
-import com.example.calorietracker.ui.viewmodel.UserViewModel
+import com.example.calorietracker.ui.theme.screens.AddMealScreen
+import com.example.calorietracker.ui.theme.screens.AuthCheck
+import com.example.calorietracker.ui.theme.screens.HomeScreen
+import com.example.calorietracker.ui.theme.screens.LoginScreen
+import com.example.calorietracker.ui.theme.screens.MealsScreen
+import com.example.calorietracker.ui.theme.screens.OnboardingScreen
+import com.example.calorietracker.ui.theme.screens.ProfileScreen
+import com.example.calorietracker.ui.theme.screens.RecipesScreen
+import com.example.calorietracker.ui.theme.screens.RegisterScreen
+import com.example.calorietracker.ui.theme.screens.StatisticsScreen
+import com.example.calorietracker.ui.theme.screens.WaterTrackingScreen
+import com.example.calorietracker.ui.theme.screens.WeightTrackingScreen
+import com.example.calorietracker.util.SessionManager
 import kotlinx.coroutines.launch
+import org.koin.android.ext.android.get
+import org.koin.compose.viewmodel.koinViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,109 +44,168 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CalorieTrackerTheme {
-                // Zentrales UserViewModel für den globalen Profil-Status
-                val userViewModel: UserViewModel = viewModel()
-                val userState by userViewModel.uiState.collectAsState()
-                
+                val navController = rememberNavController()
                 val snackbarHostState = remember { SnackbarHostState() }
                 val scope = rememberCoroutineScope()
-                
-                var currentScreen by remember { mutableStateOf(AppScreen.Login) }
-                var appState by remember { mutableStateOf(AppUiState()) }
-                var selectedMealTypeForAdd by remember { mutableStateOf<String?>(null) }
-
-                // Automatischer Wechsel zum Login, wenn nicht eingeloggt
-                LaunchedEffect(userState.isLoggedIn) {
-                    if (!userState.isLoggedIn && currentScreen != AppScreen.Register) {
-                        currentScreen = AppScreen.Login
-                    }
-                }
 
                 val onShowMessage: (String) -> Unit = { message ->
-                    scope.launch {
-                        snackbarHostState.showSnackbar(message)
-                    }
+                    scope.launch { snackbarHostState.showSnackbar(message) }
                 }
 
                 Scaffold(
-                    containerColor = Color.Black,
-                    snackbarHost = { 
+                    containerColor = Color.Black, snackbarHost = {
                         SnackbarHost(
                             hostState = snackbarHostState,
-                            modifier = Modifier.padding(bottom = 64.dp) 
-                        ) 
-                    }
-                ) { paddingValues ->
-                    Box(modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                    ) {
-                        when (currentScreen) {
-                            AppScreen.Login -> LoginScreen(
-                                onLoginSuccess = { 
-                                    currentScreen = AppScreen.Home 
-                                },
-                                onRegisterClick = { currentScreen = AppScreen.Register },
-                                onShowMessage = onShowMessage
-                            )
-
-                            AppScreen.Register -> RegisterScreen(
-                                onCreateAccountSuccess = { currentScreen = AppScreen.Onboarding },
-                                onBackToLoginClick = { currentScreen = AppScreen.Login },
-                                onShowMessage = onShowMessage
-                            )
-
-                            AppScreen.Onboarding -> OnboardingScreen(
-                                onContinueClick = { currentScreen = AppScreen.Home },
-                                onShowMessage = onShowMessage
-                            )
-
-                            AppScreen.Home -> HomeScreen(
-                                appState = appState.copy(
-                                    name = userState.profile?.displayName ?: userState.profile?.username ?: ""
-                                ),
-                                onMealsClick = { currentScreen = AppScreen.Meals },
-                                onAddMealClick = {
-                                    selectedMealTypeForAdd = null
-                                    currentScreen = AppScreen.AddMeal
-                                },
-                                onStatisticsClick = { currentScreen = AppScreen.Statistics },
-                                onProfileClick = { currentScreen = AppScreen.Profile },
-                                onWaterClick = { currentScreen = AppScreen.WaterTracking },
-                                onWeightClick = { currentScreen = AppScreen.WeightTracking }
-                            )
-
-                            AppScreen.Profile -> ProfileScreen(
-                                appState = appState.copy(
-                                    name = userState.profile?.displayName ?: userState.profile?.username ?: ""
-                                ),
-                                onStateChange = { appState = it },
-                                onHomeClick = { currentScreen = AppScreen.Home },
-                                onMealsClick = { currentScreen = AppScreen.Meals },
-                                onStatisticsClick = { currentScreen = AppScreen.Statistics },
-                                onLogoutClick = {
-                                    userViewModel.logout {
-                                        appState = AppUiState()
-                                        currentScreen = AppScreen.Login
-                                    }
-                                }
-                            )
-
-                            AppScreen.Meals -> MealsScreen(appState = appState, onHomeClick = {currentScreen = AppScreen.Home}, onStatisticsClick = {currentScreen = AppScreen.Statistics}, onProfileClick = {currentScreen = AppScreen.Profile}, onAddMealClick = {mealType -> selectedMealTypeForAdd = mealType; currentScreen = AppScreen.AddMeal}, onBottomAddClick = {selectedMealTypeForAdd = null; currentScreen = AppScreen.AddMeal}, onRecipeClick = {currentScreen = AppScreen.RecipeDetail})
-                            AppScreen.Recipes -> RecipesScreen(onBackClick = {currentScreen = AppScreen.AddMeal}, onRecipeClick = {currentScreen = AppScreen.RecipeDetail})
-                            AppScreen.RecipeDetail -> RecipeDetailScreen(onBackClick = {currentScreen = AppScreen.Recipes})
-                            AppScreen.AddMeal -> AddMealScreen(appState = appState, selectedMealType = selectedMealTypeForAdd, onStateChange = {appState = it}, onBackClick = {currentScreen = AppScreen.Meals}, onRecipesClick = {currentScreen = AppScreen.Recipes})
-                            AppScreen.Statistics -> StatisticsScreen(appState = appState, onHomeClick = {currentScreen = AppScreen.Home}, onMealsClick = {currentScreen = AppScreen.Meals}, onProfileClick = {currentScreen = AppScreen.Profile}, onWaterClick = {currentScreen = AppScreen.WaterTracking})
-                            AppScreen.WaterTracking -> WaterTrackingScreen(appState = appState, onStateChange = {appState = it}, onBackClick = {currentScreen = AppScreen.Home})
-                            AppScreen.WeightTracking -> WeightTrackingScreen(appState = appState, onStateChange = {appState = it}, onBackClick = {currentScreen = AppScreen.Home})
-                        }
-                    }
+                            modifier = Modifier.padding(bottom = 64.dp)
+                        )
+                    }) { paddingValues ->
+                    AppNavHost(
+                        navController = navController,
+                        modifier = Modifier.padding(paddingValues),
+                        onShowMessage = onShowMessage
+                    )
                 }
             }
         }
     }
-}
 
-enum class AppScreen {
-    Login, Register, Onboarding, Home, Meals, Recipes, RecipeDetail, AddMeal, Statistics, WaterTracking, WeightTracking, Profile
+    @Composable
+    fun AppNavHost(
+        navController: NavHostController, onShowMessage: (String) -> Unit, modifier: Modifier
+    ) {
+        NavHost(
+            navController = navController, startDestination = AuthCheck, modifier = modifier
+        ) {
+            composable<AuthCheck> {
+                val sessionManager = get<SessionManager>()
+                val profileRepository = get<ProfileRepository>()
+
+                AuthCheck(
+                    sessionManager = sessionManager,
+                    profileRepository = profileRepository,
+                    onShowMessage = onShowMessage,
+                    onNavigateToLogin = {
+                        navController.navigate(Login) {
+                            popUpTo(AuthCheck) { inclusive = true }
+                        }
+                    },
+                    onNavigateToHome = {
+                        navController.navigate(Home) {
+                            popUpTo(AuthCheck) { inclusive = true }
+                        }
+                    },
+                    onNavigateToOnboarding = {
+                        navController.navigate(Onboarding) {
+                            popUpTo(AuthCheck) { inclusive = true }
+                        }
+                    })
+            }
+
+            composable<Login> {
+                LoginScreen(
+                    onLoginSuccess = {
+                        navController.navigate(Home) {
+                            popUpTo(Login) {
+                                inclusive = true
+                            }
+                        }
+                    },
+                    onRegisterClick = { navController.navigate(Register) },
+                    onShowMessage = onShowMessage
+                )
+            }
+
+            composable<Register> {
+                RegisterScreen(
+                    viewModel = koinViewModel(),
+                    onCreateAccountSuccess = { navController.navigate(Onboarding) },
+                    onBackToLoginClick = { navController.navigate(Login) },
+                    onShowMessage = onShowMessage,
+                )
+            }
+
+            composable<Home> {
+                HomeScreen(
+                    viewModel = koinViewModel(),
+                    onProfileClick = { navController.navigate(ProfileDetails) },
+                    onMealsClick = { navController.navigate(MealTracking) },
+                    onAddMealClick = { navController.navigate(AddMeal) },
+                    onStatisticsClick = { navController.navigate(Statistics) },
+                    onWaterClick = { navController.navigate(WaterTracking) },
+                    onWeightClick = { navController.navigate(WeightTracking) }
+                )
+            }
+
+            composable<WaterTracking> {
+                WaterTrackingScreen(
+                    viewModel = koinViewModel(),
+                    onBackClick = { navController.navigate(Home) },
+                    onShowMessage = onShowMessage,
+                )
+            }
+
+            composable<Onboarding> {
+                OnboardingScreen(
+                    viewModel = koinViewModel(),
+                    onContinueClick = {},
+                    onShowMessage = onShowMessage,
+                )
+            }
+
+            composable<Statistics> {
+                StatisticsScreen(
+                    viewModel = koinViewModel(),
+                    onWaterClick = { navController.navigate(WaterTracking) },
+                    onHomeClick = { navController.navigate(Home) },
+                    onMealsClick = { navController.navigate(MealTracking) },
+                    onProfileClick = { navController.navigate(ProfileDetails) },
+                )
+            }
+
+            composable<WeightTracking> {
+                WeightTrackingScreen(
+                    viewModel = koinViewModel(),
+                    onBackClick = { navController.navigate(Home) },
+                )
+            }
+
+            composable<Recipes> {
+                RecipesScreen(
+                    viewModel = koinViewModel(),
+                    onBackClick = { navController.navigate(Home) },
+                    onRecipeClick = { }
+                )
+            }
+
+            composable<ProfileDetails> {
+                ProfileScreen(
+                    viewModel = koinViewModel(),
+                    onMealsClick = { navController.navigate(MealTracking) },
+                    onHomeClick = { navController.navigate(Home) },
+                    onLogoutClick = { },
+                    onStatisticsClick = { }
+                )
+            }
+
+            composable<MealTracking> {
+                MealsScreen(
+                    viewModel = koinViewModel(),
+                    onStatisticsClick = { navController.navigate(Statistics) },
+                    onHomeClick = { navController.navigate(Home) },
+                    onRecipeClick = { navController.navigate(Recipes) },
+                    onProfileClick = { navController.navigate(ProfileDetails) },
+                    onAddMealClick = { navController.navigate(AddMeal) },
+                    onBottomAddClick = { }
+                )
+            }
+
+            composable<AddMeal> {
+                AddMealScreen(
+                    viewModel = koinViewModel(),
+                    onBackClick = { navController.navigate(Home) },
+                    onRecipesClick = { navController.navigate(Recipes) }
+                )
+            }
+        }
+    }
 }

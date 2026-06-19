@@ -20,20 +20,18 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.calorietracker.ui.theme.AppUiState
-import com.example.calorietracker.ui.theme.MealEntry
 import com.example.calorietracker.ui.theme.components.PrimaryButton
+import com.example.calorietracker.ui.viewmodel.AddMealViewModel
 
 @Composable
 fun AddMealScreen(
-    appState: AppUiState,
-    selectedMealType: String?,
-    onStateChange: (AppUiState) -> Unit,
+    viewModel: AddMealViewModel,
     onBackClick: () -> Unit,
     onRecipesClick: () -> Unit
 ) {
+    val selectedMealType = "Frühstück"
     var selectedMode by remember { mutableStateOf("Manuell") }
-    var selectedMealTypeLocal by remember { mutableStateOf(selectedMealType ?: "Frühstück") }
+    var selectedMealTypeLocal by remember { mutableStateOf(selectedMealType) }
 
     var mealName by remember { mutableStateOf("") }
     var caloriesInput by remember { mutableStateOf("") }
@@ -122,24 +120,24 @@ fun AddMealScreen(
                     val carbs = carbsInput.toIntOrNull() ?: 0
                     val fat = fatInput.toIntOrNull() ?: 0
 
-                    val newMeal = MealEntry(
-                        name = mealName,
-                        mealType = selectedMealTypeLocal,
-                        calories = calories,
-                        protein = protein,
-                        carbs = carbs,
-                        fat = fat
-                    )
-
-                    onStateChange(
-                        appState.copy(
-                            calories = appState.calories + calories,
-                            protein = appState.protein + protein,
-                            carbs = appState.carbs + carbs,
-                            fat = appState.fat + fat,
-                            meals = appState.meals + newMeal
-                        )
-                    )
+//                    val newMeal = MealEntry(
+//                        name = mealName,
+//                        mealType = selectedMealTypeLocal,
+//                        calories = calories,
+//                        protein = protein,
+//                        carbs = carbs,
+//                        fat = fat
+//                    )
+//
+//                    onStateChange(
+//                        appState.copy(
+//                            calories = appState.calories + calories,
+//                            protein = appState.protein + protein,
+//                            carbs = appState.carbs + carbs,
+//                            fat = appState.fat + fat,
+//                            meals = appState.meals + newMeal
+//                        )
+//                    )
 
                     onBackClick()
                 }

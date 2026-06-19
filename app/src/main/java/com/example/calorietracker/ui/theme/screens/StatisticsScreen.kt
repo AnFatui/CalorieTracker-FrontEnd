@@ -12,19 +12,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.calorietracker.ui.theme.AppUiState
 import com.example.calorietracker.ui.theme.components.AppBottomBar
+import com.example.calorietracker.ui.viewmodel.StatisticsViewModel
 
 @Composable
 fun StatisticsScreen(
-    appState: AppUiState,
     onHomeClick: () -> Unit,
     onMealsClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onWaterClick: () -> Unit
+    onWaterClick: () -> Unit,
+    viewModel: StatisticsViewModel
 ) {
     var selectedTab by remember { mutableStateOf("Woche") }
-    val hasNutritionData = appState.calories > 0 || appState.protein > 0 || appState.carbs > 0 || appState.fat > 0
+    val uiState by viewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -49,23 +49,54 @@ fun StatisticsScreen(
         when (selectedTab) {
             "Woche" -> {
                 StatisticCard("Kalorien diese Woche") {
-                    if (appState.calories == 0) EmptyInfo("Noch keine Kalorien eingetragen.")
+                    val calories = uiState.calories
+                    val calorieGoal = uiState.calorieGoal
+                    if (calories == null) EmptyInfo("Noch keine Kalorien eingetragen.")
                     else {
-                        Text("${appState.calories} / ${appState.calorieGoal} kcal", color = Color.White, fontSize = 12.sp)
+                        Text(
+                            "${uiState.calories} / ${uiState.calorieGoal} kcal",
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
                         Spacer(Modifier.height(12.dp))
-                        ProgressBar(appState.calories, appState.calorieGoal, Color(0xFF22C55E))
+                        if (calorieGoal != null) ProgressBar(
+                            calories,
+                            calorieGoal,
+                            Color(0xFF22C55E)
+                        )
                     }
                 }
 
                 Spacer(Modifier.height(14.dp))
 
                 StatisticCard("Makronährstoffe diese Woche") {
-                    if (!hasNutritionData) EmptyInfo("Noch keine Makronährstoffe eingetragen.")
-                    else {
-                        MacroProgressLine("Protein", appState.protein, appState.proteinGoal, Color(0xFFEF4444))
-                        MacroProgressLine("Kohlenhydrate", appState.carbs, appState.carbsGoal, Color(0xFFF97316))
-                        MacroProgressLine("Fette", appState.fat, appState.fatGoal, Color(0xFFFACC15))
-                    }
+                    val proteins = uiState.proteins
+                    val proteinGoal = uiState.proteinGoal
+
+                    val fat = uiState.fat
+                    val fatGoal = uiState.fatGoal
+
+                    val carbs = uiState.carbs
+                    val carbGoal = uiState.carbGoal
+
+                    if (proteins != null && proteinGoal != null) MacroProgressLine(
+                        "Protein",
+                        proteins,
+                        proteinGoal,
+                        Color(0xFFEF4444)
+                    )
+                    if (carbs != null && carbGoal != null) MacroProgressLine(
+                        "Kohlenhydrate",
+                        carbs,
+                        carbGoal,
+                        Color(0xFFF97316)
+                    )
+                    if (fat != null && fatGoal != null) MacroProgressLine(
+                        "Fette",
+                        fat,
+                        fatGoal,
+                        Color(0xFFFACC15)
+                    )
                 }
             }
 
@@ -74,11 +105,23 @@ fun StatisticsScreen(
                     if (appState.meals.isEmpty() && appState.waterMl == 0 && appState.weightEntries.isEmpty()) {
                         EmptyInfo("Noch keine Monatsdaten vorhanden.")
                     } else {
-                        Text("Mahlzeiten: ${appState.meals.size}", color = Color.White, fontSize = 12.sp)
+                        Text(
+                            "Mahlzeiten: ${appState.meals.size}",
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
                         Spacer(Modifier.height(8.dp))
-                        Text("Kalorien gesamt: ${appState.calories} kcal", color = Color.White, fontSize = 12.sp)
+                        Text(
+                            "Kalorien gesamt: ${appState.calories} kcal",
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
                         Spacer(Modifier.height(8.dp))
-                        Text("Wasser heute: ${appState.waterMl} ml", color = Color.White, fontSize = 12.sp)
+                        Text(
+                            "Wasser heute: ${appState.waterMl} ml",
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
                     }
                 }
 
@@ -112,7 +155,10 @@ fun StatisticsScreen(
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("💧 Wasser   ${appState.waterMl} / ${appState.waterGoalMl} ml   >", color = Color.White)
+            Text(
+                "💧 Wasser   ${uiState.waterMl} / ${uiState.waterMlGoal} ml   >",
+                color = Color.White
+            )
         }
 
         Spacer(Modifier.weight(1f))
@@ -154,11 +200,19 @@ private fun EmptyInfo(text: String) {
 private fun Tab(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .background(if (selected) Color(0xFF22C55E) else Color(0xFF1F2937), RoundedCornerShape(14.dp))
+            .background(
+                if (selected) Color(0xFF22C55E) else Color(0xFF1F2937),
+                RoundedCornerShape(14.dp)
+            )
             .clickable { onClick() }
             .padding(horizontal = 28.dp, vertical = 12.dp)
     ) {
-        Text(text, color = if (selected) Color.Black else Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text,
+            color = if (selected) Color.Black else Color.White,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 

@@ -26,10 +26,10 @@ import com.example.calorietracker.ui.viewmodel.RegisterViewModel
 
 @Composable
 fun RegisterScreen(
-    onCreateAccountSuccess: () -> Unit,
+    onCreateAccountSuccess: (String) -> Unit,
     onBackToLoginClick: () -> Unit,
     onShowMessage: (String) -> Unit,
-    viewModel: RegisterViewModel = viewModel()
+    viewModel: RegisterViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -91,7 +91,7 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(32.dp))
 
-        if (uiState.isLoading) {
+        if (uiState.loading) {
             CircularProgressIndicator(color = Color(0xFF22C55E))
         } else {
             PrimaryButton(

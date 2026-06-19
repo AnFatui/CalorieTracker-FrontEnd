@@ -1,74 +1,56 @@
 package com.example.calorietracker.ui.viewmodel
 
 import android.util.Log
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.example.calorietracker.providers.SupabaseClientProvider
-import io.github.jan.supabase.auth.auth
+import com.example.calorietracker.util.ExceptionMapper
+import com.example.calorietracker.util.SessionManager
 import io.github.jan.supabase.auth.exception.AuthRestException
-import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 data class LoginUiState(
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val isLoggedIn: Boolean = false
-)
+    override val error: String? = null,
+    override val loading: Boolean = false,
+    val isLoggedIn: Boolean = false,
+) : UiState<LoginUiState> {
+    override fun copyFlags(
+        loading: Boolean,
+        error: String?
+    ): LoginUiState {
+        return this.copy(error = error, isLoggedIn = loading)
+    }
+}
 
-class LoginViewModel : ViewModel() {
+class LoginViewModel(
+    override val sessionManager: SessionManager,
+    private val exceptionMapper: ExceptionMapper
+) : BaseViewModel<LoginUiState>() {
+    override val tag: String = "LoginViewModel"
+    override val internalUiState: MutableStateFlow<LoginUiState> = MutableStateFlow(LoginUiState())
+    val uiState: StateFlow<LoginUiState> = internalUiState.asStateFlow()
 
-    private val _uiState = MutableStateFlow(LoginUiState())
-    val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
-
-    private val TAG = "LoginViewModel"
-
-    fun login(email: String, password: String, onSuccess: () -> Unit) {
-        _uiState.update { it.copy(isLoading = true, error = null) }
-        
-        viewModelScope.launch {
-            try {
-                SupabaseClientProvider.supabase.auth.signInWith(Email) {
-                    this.email = email
-                    this.password = password
-                }
-                
-                val user = SupabaseClientProvider.supabase.auth.currentUserOrNull()
-                if (user != null) {
-                    Log.d(TAG, "Login erfolgreich für: ${user.email}")
-                    _uiState.update { it.copy(isLoggedIn = true, isLoading = false) }
-                    onSuccess()
-                } else {
-                    val errorMsg = "Login fehlgeschlagen: Benutzer konnte nicht authentifiziert werden."
-                    Log.e(TAG, errorMsg)
-                    _uiState.update { it.copy(isLoading = false, error = errorMsg) }
-                }
-            } catch (e: Exception) {
-                val errorMsg = mapAuthError(e)
-                Log.e(TAG, "Login Fehler: ${e.message}", e)
-                _uiState.update { it.copy(isLoading = false, error = errorMsg) }
+    fun login(email: String, password: String, onSuccess: (String) -> Unit) {
+        clearError()
+        tryAndLogScope(
+            onError = { e ->
+                val mappedMessage = exceptionMapper.mapAuthError(e)
+                internalUiState.update { it.copy(error = mappedMessage, loading = false) }
+                Log.e(tag, "Failed to login", e)
+            }
+        ) {
+            sessionManager.login(email = email, password = password)
+            val userInfo = sessionManager.currentUserInfo
+            if (userInfo == null) {
+                val errorMsg =
+                    "Login fehlgeschlagen: Benutzer konnte nicht authentifiziert werden."
+                Log.e(tag, errorMsg)
+                internalUiState.update { it.copy(loading = false, error = errorMsg) }
+            } else {
+                Log.d(tag, "Login erfolgreich für: ${userInfo.email}")
+                internalUiState.update { it.copy(isLoggedIn = true, loading = false) }
+                onSuccess(userInfo.id)
             }
         }
-    }
-
-    private fun mapAuthError(e: Exception): String {
-        return when (e) {
-            is AuthRestException -> {
-                when (e.error) {
-                    "invalid_credentials" -> "E-Mail oder Passwort ist falsch."
-                    "user_not_found" -> "Benutzer wurde nicht gefunden."
-                    "invalid_grant" -> "Ungültige Anmeldedaten."
-                    else -> "Authentifizierungsfehler: ${e.error}"
-                }
-            }
-            else -> e.localizedMessage ?: "Ein unerwarteter Fehler ist aufgetreten"
-        }
-    }
-
-    fun clearError() {
-        _uiState.update { it.copy(error = null) }
     }
 }
