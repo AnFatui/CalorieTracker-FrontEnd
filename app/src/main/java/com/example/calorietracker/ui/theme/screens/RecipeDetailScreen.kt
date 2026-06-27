@@ -15,7 +15,9 @@ import androidx.compose.ui.unit.sp
 import com.example.calorietracker.ui.theme.components.PrimaryButton
 
 @Composable
-fun RecipeDetailScreen(onBackClick: () -> Unit) {
+fun RecipeDetailScreen(
+    onBackClick: () -> Unit
+) {
     var isFavorite by remember { mutableStateOf(false) }
 
     Column(

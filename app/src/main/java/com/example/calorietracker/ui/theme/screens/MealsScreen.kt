@@ -2,31 +2,42 @@ package com.example.calorietracker.ui.theme.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.calorietracker.ui.theme.AppUiState
-import com.example.calorietracker.ui.theme.MealEntry
-import com.example.calorietracker.ui.theme.components.AppBottomBar
+import com.example.calorietracker.data.model.MealLog
+import com.example.calorietracker.ui.viewmodel.MealTrackingViewModel
 
 @Composable
 fun MealsScreen(
-    appState: AppUiState,
-    onHomeClick: () -> Unit,
-    onStatisticsClick: () -> Unit,
-    onProfileClick: () -> Unit,
+    viewModel: MealTrackingViewModel,
     onAddMealClick: (String) -> Unit,
-    onBottomAddClick: () -> Unit,
     onRecipeClick: () -> Unit
 ) {
     var selectedDay by remember { mutableStateOf("Mo") }
+    val uiDataState by viewModel.uiDataState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -52,42 +63,33 @@ fun MealsScreen(
 
         MealSection(
             title = "Frühstück",
-            meals = appState.meals.filter { it.mealType == "Frühstück" },
+            meals = uiDataState.meals.filter { it.type == "Frühstück" },
             onAddClick = { onAddMealClick("Frühstück") },
             onRecipeClick = onRecipeClick
         )
 
         MealSection(
             title = "Mittagessen",
-            meals = appState.meals.filter { it.mealType == "Mittagessen" },
+            meals = uiDataState.meals.filter { it.type == "Mittagessen" },
             onAddClick = { onAddMealClick("Mittagessen") },
             onRecipeClick = onRecipeClick
         )
 
         MealSection(
             title = "Abendessen",
-            meals = appState.meals.filter { it.mealType == "Abendessen" },
+            meals = uiDataState.meals.filter { it.type == "Abendessen" },
             onAddClick = { onAddMealClick("Abendessen") },
             onRecipeClick = onRecipeClick
         )
 
         MealSection(
             title = "Snacks",
-            meals = appState.meals.filter { it.mealType == "Snacks" },
+            meals = uiDataState.meals.filter { it.type == "Snacks" },
             onAddClick = { onAddMealClick("Snacks") },
             onRecipeClick = onRecipeClick
         )
 
         Spacer(Modifier.weight(1f))
-
-        AppBottomBar(
-            selected = "Meals",
-            onHomeClick = onHomeClick,
-            onMealsClick = {},
-            onAddClick = onBottomAddClick,
-            onStatisticsClick = onStatisticsClick,
-            onProfileClick = onProfileClick
-        )
     }
 }
 
@@ -103,14 +105,19 @@ private fun DateBox(text: String, selected: Boolean, onClick: () -> Unit) {
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Text(text, color = if (selected) Color.Black else Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text,
+            color = if (selected) Color.Black else Color.White,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
 @Composable
 private fun MealSection(
     title: String,
-    meals: List<MealEntry>,
+    meals: List<MealLog>,
     onAddClick: () -> Unit,
     onRecipeClick: () -> Unit
 ) {
@@ -156,7 +163,7 @@ private fun MealSection(
 
 @Composable
 private fun MealRow(
-    meal: MealEntry,
+    meal: MealLog,
     onRecipeClick: () -> Unit
 ) {
     Row(
