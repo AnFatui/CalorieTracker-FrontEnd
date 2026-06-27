@@ -18,7 +18,7 @@ data class MealTrackingUiState(
         loading: Boolean,
         error: String?
     ): MealTrackingUiState {
-        return this.copyFlags(loading = loading, error = error)
+        return this.copy(loading = loading, error = error)
     }
 }
 

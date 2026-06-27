@@ -3,48 +3,31 @@ package com.example.calorietracker.ui.theme.screens
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.calorietracker.ui.theme.components.AppBottomBar
-import com.example.calorietracker.ui.viewmodel.UserViewModel
 import com.example.calorietracker.ui.viewmodel.WeightTrackingViewModel
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
 @Composable
 fun WeightTrackingScreen(
-    onBackClick: () -> Unit,
     viewModel: WeightTrackingViewModel
 ) {
-    val dataState by viewModel.dataUiState.collectAsState()
-    var newWeightEntry by remember { mutableStateOf("") }
+    val dataState by viewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -52,143 +35,126 @@ fun WeightTrackingScreen(
             .background(Color.Black)
             .padding(horizontal = 20.dp)
     ) {
-        Spacer(Modifier.height(42.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                "←",
-                color = Color.White,
-                fontSize = 30.sp,
-                modifier = Modifier.clickable { onBackClick() })
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                WeightAdjustButton("-") { viewModel.adjustWeight(-0.1) }
 
-            Text("Gewicht", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(24.dp))
+
+                val weightDisplay =
+                    dataState.currentWeightKg?.let { "%.1f".format(it) } ?: "--.-"
+                Text(
+                    text = "$weightDisplay kg",
+                    color = Color.White,
+                    fontSize = 38.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.width(24.dp))
+
+                WeightAdjustButton("+") { viewModel.adjustWeight(0.1) }
+            }
 
             Text(
-                "+",
-                color = Color.White,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable {
-                    if (newWeightEntry.isNotBlank() && newWeightEntry.toDoubleOrNull() != null) {
-                        val entry = newWeightEntry.toDouble()
-                        viewModel.addWeightLog(entry)
-                    }
-                }
+                text = "Zielgewicht: ${dataState.targetWeightKg ?: "-"} kg",
+                color = Color(0xFF22C55E),
+                fontSize = 14.sp
             )
         }
 
-        Spacer(Modifier.height(28.dp))
-        val weightText: String =
-            if (dataState.currentWeightKg != null) "${dataState.currentWeightKg} KG"
-            else "Kein Gewichtsdaten vorhanden"
-
-        Text(
-            text = weightText,
-            color = Color.White,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-
-        Text(
-            text = "Zielgewicht: ${dataState.targetWeightKg} kg",
-            color = Color(0xFF22C55E),
-            fontSize = 12.sp,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        OutlinedTextField(
-            value = newWeightEntry,
-            onValueChange = { input ->
-                newWeightEntry = input.filter { it.isDigit() || it == ',' || it == '.' }
-            },
-            placeholder = { Text("Neues Gewicht eintragen", color = Color.Gray) },
-            suffix = { Text("kg", color = Color.White) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFF1F2937),
-                unfocusedContainerColor = Color(0xFF1F2937),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                cursorColor = Color.White
-            ),
-            textStyle = TextStyle(color = Color.White)
-        )
-
-        Spacer(Modifier.height(26.dp))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(170.dp)
-                .background(Color(0xFF050505), RoundedCornerShape(16.dp)),
-            contentAlignment = Alignment.Center
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (dataState.weightLogs.isEmpty()) {
-                Text("Noch kein Gewichtsverlauf vorhanden.", color = Color.Gray, fontSize = 12.sp)
-            } else {
-                Canvas(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(18.dp)
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .background(Color(0xFF050505), RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    val points = listOf(
-                        Offset(10f, size.height * 0.65f),
-                        Offset(size.width * 0.35f, size.height * 0.55f),
-                        Offset(size.width * 0.7f, size.height * 0.48f),
-                        Offset(size.width - 10f, size.height * 0.42f)
-                    )
-
-                    for (i in 0 until points.size - 1) {
-                        drawLine(Color(0xFF22C55E), points[i], points[i + 1], strokeWidth = 5f)
+                    if (dataState.weightLogs.isEmpty()) {
+                        Text("Noch kein Verlauf vorhanden.", color = Color.Gray, fontSize = 12.sp)
+                    } else {
+                        Canvas(
+                            Modifier
+                                .fillMaxSize()
+                                .padding(18.dp)
+                        ) {
+                            // TODO: Draw Graph logic
+                        }
                     }
                 }
             }
-        }
 
-        Spacer(Modifier.height(20.dp))
-
-        Text("Verlauf", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
-                .padding(14.dp)
-        ) {
-            if (dataState.weightLogs.isEmpty()) {
-                WeightRow("Aktueller Eintrag", "-")
-                WeightRow(
-                    "Zielgewicht",
-                    if (dataState.targetWeightKg == null) "-" else "${dataState.targetWeightKg} kg"
+            item {
+                Text(
+                    "Verlauf",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
+            }
+
+            if (dataState.weightLogs.isEmpty()) {
+                item {
+                    Text("Keine Einträge gefunden.", color = Color.Gray, fontSize = 14.sp)
+                }
             } else {
-                dataState.weightLogs.reversed().forEach {
-                    WeightRow(it.loggedAt.toString(), "${it.weightKg} kg")
+                val logs = dataState.weightLogs.sortedByDescending { it.loggedAt }
+                itemsIndexed(logs) { index, log ->
+                    val shape = when {
+                        logs.size == 1 -> RoundedCornerShape(16.dp)
+                        index == 0 -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                        index == logs.size - 1 -> RoundedCornerShape(
+                            bottomStart = 16.dp,
+                            bottomEnd = 16.dp
+                        )
+
+                        else -> RectangleShape
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF1F2937), shape)
+                            .padding(horizontal = 14.dp)
+                    ) {
+                        WeightRow(
+                            date = log.loggedAt.toLocalDateTime(TimeZone.currentSystemDefault()).date.toString(),
+                            weight = "${log.weightKg} kg"
+                        )
+                    }
                 }
             }
+
+            // Kleiner Puffer am Ende der Liste
+            item { Spacer(Modifier.height(16.dp)) }
         }
+    }
+}
 
-        Spacer(Modifier.weight(1f))
-
-        AppBottomBar(
-            selected = "Statistics",
-            onHomeClick = onBackClick,
-            onMealsClick = {},
-            onAddClick = {},
-            onStatisticsClick = {},
-            onProfileClick = {}
-        )
+@Composable
+fun WeightAdjustButton(symbol: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .background(Color(0xFF1F2937), CircleShape)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(symbol, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -197,10 +163,10 @@ private fun WeightRow(date: String, weight: String) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .padding(vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(date, color = Color.White, fontSize = 12.sp)
-        Text(weight, color = Color.White, fontSize = 12.sp)
+        Text(date, color = Color.White, fontSize = 14.sp)
+        Text(weight, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
     }
 }

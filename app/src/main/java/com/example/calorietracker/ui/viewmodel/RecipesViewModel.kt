@@ -11,7 +11,7 @@ data class RecipesUiState(
         loading: Boolean,
         error: String?
     ): RecipesUiState {
-        return this.copyFlags(loading = loading, error = error)
+        return this.copy(loading = loading, error = error)
     }
 }
 

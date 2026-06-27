@@ -42,7 +42,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.calorietracker.ui.theme.components.AppBottomBar
 import com.example.calorietracker.ui.theme.components.PrimaryButton
 import com.example.calorietracker.ui.viewmodel.ProfileUiState
 import com.example.calorietracker.ui.viewmodel.ProfileViewModel
@@ -50,14 +49,12 @@ import com.example.calorietracker.ui.viewmodel.ProfileViewModel
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
-    onHomeClick: () -> Unit,
-    onMealsClick: () -> Unit,
-    onStatisticsClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     val context = LocalContext.current
     var currentProfilePage by remember { mutableStateOf<String?>(null) }
     val uiState by viewModel.uiState.collectAsState()
+    val displayName = uiState.displayName ?: "None"
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -86,8 +83,6 @@ fun ProfileScreen(
             .padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(64.dp))
-
         // Profilbild Sektion
         Box(
             modifier = Modifier
@@ -118,7 +113,7 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(12.dp))
         Text(
-            text = uiState.displayName,
+            text = displayName,
             color = Color.White,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold
@@ -139,19 +134,13 @@ fun ProfileScreen(
             ProfileRow("Benachrichtigungen") { currentProfilePage = "Benachrichtigungen" }
             ProfileRow("Einstellungen") { currentProfilePage = "Einstellungen" }
             ProfileRow("Hilfe & Support") { currentProfilePage = "Hilfe & Support" }
-            ProfileRow("Abmelden", Color(0xFFEF4444)) { onLogoutClick() }
+            ProfileRow("Abmelden", Color(0xFFEF4444)) {
+                viewModel.logout()
+                onLogoutClick()
+            }
         }
 
         Spacer(Modifier.weight(1f))
-
-        AppBottomBar(
-            selected = "Profile",
-            onHomeClick = onHomeClick,
-            onMealsClick = onMealsClick,
-            onAddClick = onMealsClick,
-            onStatisticsClick = onStatisticsClick,
-            onProfileClick = {}
-        )
     }
 }
 
@@ -196,7 +185,7 @@ private fun PersonalDataPage(
     uiState: ProfileUiState,
     onBackClick: () -> Unit
 ) {
-    var name by remember { mutableStateOf(uiState.displayName) }
+    var name by remember { mutableStateOf(uiState.displayName ?: "None") }
     var email by remember { mutableStateOf("beispiel@mail.de") }
 
     Column {

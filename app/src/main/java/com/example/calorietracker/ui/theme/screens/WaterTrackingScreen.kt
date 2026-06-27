@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.calorietracker.ui.theme.components.AppBottomBar
 import com.example.calorietracker.ui.viewmodel.WaterTrackingViewModel
 
 @Composable
@@ -63,7 +62,7 @@ fun WaterTrackingScreen(
             Spacer(Modifier.weight(1f))
             Text("Wasser", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
-            if (uiState.isLoading) {
+            if (uiState.loading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
                     color = Color(0xFF3B82F6),
@@ -170,19 +169,6 @@ fun WaterTrackingScreen(
                 }
             }
         }
-
-        Spacer(Modifier.height(16.dp))
-
-        AppBottomBar(
-            selected = "Statistics",
-            onHomeClick = onBackClick,
-            onMealsClick = {},
-            onAddClick = {},
-            onStatisticsClick = {},
-            onProfileClick = {}
-        )
-
-        Spacer(Modifier.height(16.dp))
     }
 }
 

@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -54,7 +56,7 @@ class WeightTrackingViewModel(
             internalUiState.update {
                 it.copy(
                     weightLogs = logs,
-                    currentWeightKg = logs.maxByOrNull { l -> l.loggedAt }?.weightKg,
+                    currentWeightKg = logs.maxByOrNull { l -> l.loggedAt }?.weightKg ?: profile.targetWeightKg ?: 70.0,
                     targetWeightKg = profile.targetWeightKg
                 )
             }
@@ -62,19 +64,41 @@ class WeightTrackingViewModel(
     }
 
     @OptIn(ExperimentalTime::class)
-    fun addWeightLog(weightKg: Double) {
+    fun adjustWeight(delta: Double) {
+        val currentWeight = internalUiState.value.currentWeightKg ?: return
+        val newWeight = currentWeight + delta
+        updateWeight(newWeight)
+    }
+
+    @OptIn(ExperimentalTime::class)
+    fun updateWeight(weightKg: Double) {
+        // Optimistic update
+        internalUiState.update { it.copy(currentWeightKg = weightKg) }
+
         viewModelScope.launch {
             tryAndLogScope {
                 getUserId { userId ->
-                    weightRepository.addWeightLog(
-                        AddWeightLogDTO(
-                            userId = userId,
-                            weightKg = weightKg,
-                            loggedAt = Clock.System.now()
-                        )
-                    )
+                    val latestLog = weightRepository.getLatestWeightLog(userId)
+                    val now = Clock.System.now()
+                    val today = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
+                    
+                    val isToday = latestLog != null && 
+                            latestLog.loggedAt.toLocalDateTime(TimeZone.currentSystemDefault()).date == today
 
-                    internalUiState.update { it.copy(currentWeightKg = weightKg) }
+                    if (isToday && latestLog.id != null) {
+                        weightRepository.updateWeightLog(latestLog.id, weightKg)
+                    } else {
+                        weightRepository.addWeightLog(
+                            AddWeightLogDTO(
+                                userId = userId,
+                                weightKg = weightKg,
+                                loggedAt = now
+                            )
+                        )
+                    }
+                    // Refresh logs to update history
+                    val logs = weightRepository.getWeightLogs(userId)
+                    internalUiState.update { it.copy(weightLogs = logs) }
                 }
             }
         }

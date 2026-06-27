@@ -33,7 +33,7 @@ data class HomeUiState(
         loading: Boolean,
         error: String?
     ): HomeUiState {
-        return this.copyFlags(loading = loading, error = error)
+        return this.copy(loading = loading, error = error)
     }
 }
 
@@ -69,6 +69,7 @@ class HomeViewModel(
 
                 internalUiState.update {
                     it.copy(
+                        displayName =  profile.displayName,
                         currentWeight = currentWeightLog?.weightKg,
                         targetWeight = profile.targetWeightKg,
                         //calories = nutrition.calories,

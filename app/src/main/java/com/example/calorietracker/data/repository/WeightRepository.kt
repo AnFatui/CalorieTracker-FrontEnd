@@ -23,6 +23,18 @@ class WeightRepository(
         supabase.from("weight_logs").insert(weightLog)
     }
 
+    suspend fun updateWeightLog(id: String, weightKg: Double) {
+        supabase.from("weight_logs").update(
+            {
+                set("weight_kg", weightKg)
+            }
+        ) {
+            filter {
+                eq("id", id)
+            }
+        }
+    }
+
     @OptIn(ExperimentalTime::class)
     suspend fun getLatestWeightLog(userId: String): WeightLog? {
         return supabase.from("weight_logs")

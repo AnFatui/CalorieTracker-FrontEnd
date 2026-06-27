@@ -26,7 +26,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.calorietracker.ui.theme.components.AppBottomBar
 import com.example.calorietracker.ui.theme.components.MacroCircle
 import com.example.calorietracker.ui.theme.components.TrackingCard
 import com.example.calorietracker.ui.viewmodel.HomeViewModel
@@ -34,35 +33,20 @@ import com.example.calorietracker.ui.viewmodel.HomeViewModel
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    onMealsClick: () -> Unit,
-    onAddMealClick: () -> Unit,
-    onStatisticsClick: () -> Unit,
-    onProfileClick: () -> Unit,
     onWaterClick: () -> Unit,
-    onWeightClick: () -> Unit
+    onWeightClick: () -> Unit,
+    onSetTitle: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    val greeting =
-        uiState.displayName?.let { displayName -> "Hallo ${displayName}! 👋" } ?: "Hallo! 👋"
-
     val calorieProgress = uiState.calorieGoal?.let { safeProgress(uiState.calories, it) }
+    onSetTitle(uiState.displayName?.let { displayName -> "Hallo ${displayName}! 👋" } ?: "Hallo! 👋")
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .padding(horizontal = 18.dp)
+            .padding(horizontal = 16.dp)
     ) {
-        Spacer(Modifier.height(38.dp))
-
-        Text(
-            text = greeting,
-            color = Color.White,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
         Text("Heute", color = Color.Gray, fontSize = 12.sp)
 
         Spacer(Modifier.height(14.dp))
@@ -205,15 +189,6 @@ fun HomeScreen(
         }
 
         Spacer(Modifier.weight(1f))
-
-        AppBottomBar(
-            selected = "Home",
-            onHomeClick = {},
-            onMealsClick = onMealsClick,
-            onAddClick = onAddMealClick,
-            onStatisticsClick = onStatisticsClick,
-            onProfileClick = onProfileClick
-        )
     }
 }
 

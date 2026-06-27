@@ -28,7 +28,7 @@ fun LoginScreen(
     onLoginSuccess: (String) -> Unit,
     onRegisterClick: () -> Unit,
     onShowMessage: (String) -> Unit,
-    viewModel: LoginViewModel = viewModel()
+    viewModel: LoginViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     

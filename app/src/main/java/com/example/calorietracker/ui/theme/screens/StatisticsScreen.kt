@@ -12,14 +12,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.calorietracker.ui.theme.components.AppBottomBar
 import com.example.calorietracker.ui.viewmodel.StatisticsViewModel
 
 @Composable
 fun StatisticsScreen(
-    onHomeClick: () -> Unit,
-    onMealsClick: () -> Unit,
-    onProfileClick: () -> Unit,
     onWaterClick: () -> Unit,
     viewModel: StatisticsViewModel
 ) {
@@ -102,23 +98,26 @@ fun StatisticsScreen(
 
             "Monat" -> {
                 StatisticCard("Monatsübersicht") {
-                    if (appState.meals.isEmpty() && appState.waterMl == 0 && appState.weightEntries.isEmpty()) {
+                    if (true /*ppState.meals.isEmpty() && appState.waterMl == 0 && appState.weightEntries.isEmpty()*/) {
                         EmptyInfo("Noch keine Monatsdaten vorhanden.")
                     } else {
                         Text(
-                            "Mahlzeiten: ${appState.meals.size}",
+                            //"Mahlzeiten: ${appState.meals.size}",
+                            "",
                             color = Color.White,
                             fontSize = 12.sp
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Kalorien gesamt: ${appState.calories} kcal",
+                            //"Kalorien gesamt: ${appState.calories} kcal",
+                            "",
                             color = Color.White,
                             fontSize = 12.sp
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Wasser heute: ${appState.waterMl} ml",
+                            //"Wasser heute: ${appState.waterMl} ml",
+                            "",
                             color = Color.White,
                             fontSize = 12.sp
                         )
@@ -162,15 +161,6 @@ fun StatisticsScreen(
         }
 
         Spacer(Modifier.weight(1f))
-
-        AppBottomBar(
-            selected = "Statistics",
-            onHomeClick = onHomeClick,
-            onMealsClick = onMealsClick,
-            onAddClick = onMealsClick,
-            onStatisticsClick = {},
-            onProfileClick = onProfileClick
-        )
     }
 }
 

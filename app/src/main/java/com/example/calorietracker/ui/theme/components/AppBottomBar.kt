@@ -1,5 +1,6 @@
 package com.example.calorietracker.ui.theme.components
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,10 +13,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
+import com.example.calorietracker.Home
+import com.example.calorietracker.MealTracking
+import com.example.calorietracker.ProfileDetails
+import com.example.calorietracker.Statistics
 
 @Composable
 fun AppBottomBar(
-    selected: String,
+    currentDestination: NavDestination?,
     onHomeClick: () -> Unit,
     onMealsClick: () -> Unit,
     onAddClick: () -> Unit,
@@ -29,8 +36,18 @@ fun AppBottomBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        BottomItem("⌂", "Home", selected == "Home", onHomeClick)
-        BottomItem("🍴", "Mahlzeit", selected == "Meals", onMealsClick)
+        BottomItem(
+            icon = "⌂",
+            label = "Home",
+            selected = currentDestination?.hasRoute<Home>() == true,
+            onClick = onHomeClick
+        )
+        BottomItem(
+            icon = "🍴",
+            label = "Mahlzeit",
+            selected = currentDestination?.hasRoute<MealTracking>() == true,
+            onClick = onMealsClick
+        )
 
         Box(
             modifier = Modifier
@@ -47,8 +64,18 @@ fun AppBottomBar(
             )
         }
 
-        BottomItem("▥", "Statistik", selected == "Statistics", onStatisticsClick)
-        BottomItem("♡", "Profil", selected == "Profile", onProfileClick)
+        BottomItem(
+            icon = "▥",
+            label = "Statistik",
+            selected = currentDestination?.hasRoute<Statistics>() == true,
+            onClick = onStatisticsClick
+        )
+        BottomItem(
+            icon = "♡",
+            label = "Profil",
+            selected = currentDestination?.hasRoute<ProfileDetails>() == true,
+            onClick = onProfileClick
+        )
     }
 }
 

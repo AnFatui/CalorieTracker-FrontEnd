@@ -28,17 +28,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.calorietracker.data.model.MealLog
-import com.example.calorietracker.ui.theme.components.AppBottomBar
 import com.example.calorietracker.ui.viewmodel.MealTrackingViewModel
 
 @Composable
 fun MealsScreen(
     viewModel: MealTrackingViewModel,
-    onHomeClick: () -> Unit,
-    onStatisticsClick: () -> Unit,
-    onProfileClick: () -> Unit,
     onAddMealClick: (String) -> Unit,
-    onBottomAddClick: () -> Unit,
     onRecipeClick: () -> Unit
 ) {
     var selectedDay by remember { mutableStateOf("Mo") }
@@ -95,15 +90,6 @@ fun MealsScreen(
         )
 
         Spacer(Modifier.weight(1f))
-
-        AppBottomBar(
-            selected = "Meals",
-            onHomeClick = onHomeClick,
-            onMealsClick = {},
-            onAddClick = onBottomAddClick,
-            onStatisticsClick = onStatisticsClick,
-            onProfileClick = onProfileClick
-        )
     }
 }
 
