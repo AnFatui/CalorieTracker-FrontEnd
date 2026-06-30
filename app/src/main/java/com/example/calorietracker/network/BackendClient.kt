@@ -8,7 +8,7 @@ object BackendClient {
 
 
     private const val BASE_URL =
-        "http://138.68.152.93/"
+        "http://138.68.152.93:8080/"
 
     private val okHttpClient =
         OkHttpClient.Builder()
