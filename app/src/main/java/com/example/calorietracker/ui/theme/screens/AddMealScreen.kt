@@ -1,10 +1,8 @@
 package com.example.calorietracker.ui.theme.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -54,9 +52,12 @@ fun AddMealScreen(
     ) {
         Spacer(Modifier.height(42.dp))
 
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                "←",
+                text = "←",
                 color = Color.White,
                 fontSize = 30.sp,
                 modifier = Modifier.clickable { onBackClick() }
@@ -65,7 +66,7 @@ fun AddMealScreen(
             Spacer(Modifier.width(18.dp))
 
             Text(
-                "Mahlzeit hinzufügen",
+                text = "Mahlzeit hinzufügen",
                 color = Color.White,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
@@ -92,7 +93,11 @@ fun AddMealScreen(
         Spacer(Modifier.height(20.dp))
 
         if (selectedMode == "KI Erkennung") {
-            AiRecognitionContent()
+            FoodRecognitionContent(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
         } else {
             ManualMealContent(
                 selectedMealTypeLocal = selectedMealTypeLocal,
@@ -100,13 +105,29 @@ fun AddMealScreen(
                 mealName = mealName,
                 onMealNameChange = { mealName = it },
                 caloriesInput = caloriesInput,
-                onCaloriesChange = { caloriesInput = it.filter { c -> c.isDigit() } },
+                onCaloriesChange = {
+                    caloriesInput = it.filter { character ->
+                        character.isDigit()
+                    }
+                },
                 proteinInput = proteinInput,
-                onProteinChange = { proteinInput = it.filter { c -> c.isDigit() } },
+                onProteinChange = {
+                    proteinInput = it.filter { character ->
+                        character.isDigit()
+                    }
+                },
                 carbsInput = carbsInput,
-                onCarbsChange = { carbsInput = it.filter { c -> c.isDigit() } },
+                onCarbsChange = {
+                    carbsInput = it.filter { character ->
+                        character.isDigit()
+                    }
+                },
                 fatInput = fatInput,
-                onFatChange = { fatInput = it.filter { c -> c.isDigit() } }
+                onFatChange = {
+                    fatInput = it.filter { character ->
+                        character.isDigit()
+                    }
+                }
             )
 
             Spacer(Modifier.weight(1f))
@@ -172,20 +193,39 @@ private fun ManualMealContent(
 
     Spacer(Modifier.height(10.dp))
 
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        MealTypeChip("Frühstück", selectedMealTypeLocal == "Frühstück", Modifier.weight(1f)) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        MealTypeChip(
+            "Frühstück",
+            selectedMealTypeLocal == "Frühstück",
+            Modifier.weight(1f)
+        ) {
             onMealTypeChange("Frühstück")
         }
 
-        MealTypeChip("Mittag", selectedMealTypeLocal == "Mittagessen", Modifier.weight(1f)) {
+        MealTypeChip(
+            "Mittag",
+            selectedMealTypeLocal == "Mittagessen",
+            Modifier.weight(1f)
+        ) {
             onMealTypeChange("Mittagessen")
         }
 
-        MealTypeChip("Abend", selectedMealTypeLocal == "Abendessen", Modifier.weight(1f)) {
+        MealTypeChip(
+            "Abend",
+            selectedMealTypeLocal == "Abendessen",
+            Modifier.weight(1f)
+        ) {
             onMealTypeChange("Abendessen")
         }
 
-        MealTypeChip("Snack", selectedMealTypeLocal == "Snacks", Modifier.weight(1f)) {
+        MealTypeChip(
+            "Snack",
+            selectedMealTypeLocal == "Snacks",
+            Modifier.weight(1f)
+        ) {
             onMealTypeChange("Snacks")
         }
     }
@@ -213,75 +253,11 @@ private fun ManualMealContent(
 }
 
 @Composable
-private fun AiRecognitionContent() {
-    Spacer(Modifier.height(22.dp))
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(230.dp)
-            .border(1.dp, Color(0xFF374151), RoundedCornerShape(24.dp))
-            .background(Color(0xFF111827), RoundedCornerShape(24.dp)),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = Modifier
-                    .size(82.dp)
-                    .background(Color(0xFF1F2937), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("📷", fontSize = 34.sp)
-            }
-
-            Spacer(Modifier.height(18.dp))
-
-            Text(
-                text = "Foto einer Mahlzeit aufnehmen",
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = "Die KI-Erkennung wird später mit der Datenbank bzw. Supabase verbunden.",
-                color = Color.Gray,
-                fontSize = 12.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 26.dp)
-            )
-        }
-    }
-
-    Spacer(Modifier.height(24.dp))
-
-    PrimaryButton(
-        text = "Foto hochladen",
-        enabled = false,
-        onClick = {}
-    )
-
-    Spacer(Modifier.height(12.dp))
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .background(Color(0xFF1F2937), RoundedCornerShape(18.dp)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "Kamera öffnen",
-            color = Color.White.copy(alpha = 0.45f),
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun ModeChip(text: String, selected: Boolean, onClick: () -> Unit) {
+private fun ModeChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .background(
@@ -336,10 +312,20 @@ private fun MealInput(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder, color = Color.Gray, fontSize = 13.sp) },
+        placeholder = {
+            Text(
+                text = placeholder,
+                color = Color.Gray,
+                fontSize = 13.sp
+            )
+        },
         singleLine = true,
         keyboardOptions = KeyboardOptions(
-            keyboardType = if (number) KeyboardType.Number else KeyboardType.Text
+            keyboardType = if (number) {
+                KeyboardType.Number
+            } else {
+                KeyboardType.Text
+            }
         ),
         modifier = Modifier
             .fillMaxWidth()
