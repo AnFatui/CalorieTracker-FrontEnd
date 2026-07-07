@@ -51,8 +51,6 @@ fun LoginScreen(
             .padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(72.dp))
-
         Box(
             modifier = Modifier
                 .size(96.dp)

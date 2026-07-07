@@ -55,7 +55,6 @@ fun RegisterScreen(
             .padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(66.dp))
         Text(
             "Account erstellen",
             color = Color.White,

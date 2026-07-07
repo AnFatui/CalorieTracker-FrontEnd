@@ -26,8 +26,6 @@ fun RecipeDetailScreen(
             .background(Color.Black)
             .padding(20.dp)
     ) {
-        Spacer(Modifier.height(36.dp))
-
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
                 "←",
@@ -89,8 +87,6 @@ fun RecipeDetailScreen(
         Spacer(Modifier.weight(1f))
 
         PrimaryButton("Zu Mahlzeit hinzufügen", onBackClick)
-
-        Spacer(Modifier.height(20.dp))
     }
 }
 
