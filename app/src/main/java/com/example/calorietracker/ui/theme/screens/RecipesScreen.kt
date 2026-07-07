@@ -24,10 +24,16 @@ import com.example.calorietracker.ui.viewmodel.RecipesViewModel
 @Composable
 fun RecipesScreen(
     onRecipeClick: () -> Unit,
-    viewModel: RecipesViewModel
+    viewModel: RecipesViewModel,
+    onSetLoading: (Boolean) -> Unit
 ) {
     var search by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Alle") }
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.loading) {
+        onSetLoading(uiState.loading)
+    }
 
     Column(
         modifier = Modifier

@@ -24,8 +24,11 @@ import com.example.calorietracker.ui.viewmodel.AddMealViewModel
 @Composable
 fun AddMealScreen(
     viewModel: AddMealViewModel,
-    onRecipesClick: () -> Unit
+    onBackClick: () -> Unit,
+    onRecipesClick: () -> Unit,
+    onSetLoading: (Boolean) -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val selectedMealType = "Frühstück"
     var selectedMode by remember { mutableStateOf("Manuell") }
     var selectedMealTypeLocal by remember { mutableStateOf(selectedMealType) }
@@ -41,6 +44,10 @@ fun AddMealScreen(
             proteinInput.isNotBlank() &&
             carbsInput.isNotBlank() &&
             fatInput.isNotBlank()
+
+    LaunchedEffect(uiState.loading) {
+        onSetLoading(uiState.loading)
+    }
 
     Column(
         modifier = Modifier
@@ -134,7 +141,7 @@ fun AddMealScreen(
 //                        )
 //                    )
 
-                    //onBackClick()
+                    onBackClick()
                 }
             )
 

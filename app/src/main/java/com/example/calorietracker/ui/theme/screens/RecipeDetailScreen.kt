@@ -13,12 +13,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.calorietracker.ui.theme.components.PrimaryButton
+import com.example.calorietracker.ui.viewmodel.RecipeDetailViewModel
 
 @Composable
 fun RecipeDetailScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onSetLoading: (Boolean) -> Unit,
+    viewModel: RecipeDetailViewModel
 ) {
     var isFavorite by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.loading) {
+        onSetLoading(uiState.loading)
+    }
 
     Column(
         modifier = Modifier

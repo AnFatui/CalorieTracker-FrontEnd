@@ -19,20 +19,21 @@ class WeightRepository(
             }.decodeList<WeightLog>()
     }
 
-    suspend fun addWeightLog(weightLog: AddWeightLogDTO) {
-        supabase.from("weight_logs").insert(weightLog)
+    suspend fun addWeightLog(weightLog: AddWeightLogDTO): WeightLog {
+        return supabase.from("weight_logs")
+            .insert(weightLog) { select() }
+            .decodeSingle<WeightLog>()
     }
 
-    suspend fun updateWeightLog(id: String, weightKg: Double) {
-        supabase.from("weight_logs").update(
+    suspend fun updateWeightLog(id: String, weightKg: Double): WeightLog {
+        return supabase.from("weight_logs").update(
             {
                 set("weight_kg", weightKg)
             }
         ) {
-            filter {
-                eq("id", id)
-            }
-        }
+            filter { eq("id", id) }
+            select()
+        }.decodeSingle<WeightLog>()
     }
 
     @OptIn(ExperimentalTime::class)

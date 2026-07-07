@@ -17,10 +17,15 @@ import com.example.calorietracker.ui.viewmodel.StatisticsViewModel
 @Composable
 fun StatisticsScreen(
     onWaterClick: () -> Unit,
-    viewModel: StatisticsViewModel
+    viewModel: StatisticsViewModel,
+    onSetLoading: (Boolean) -> Unit
 ) {
     var selectedTab by remember { mutableStateOf("Woche") }
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.loading) {
+        onSetLoading(uiState.loading)
+    }
 
     Column(
         modifier = Modifier

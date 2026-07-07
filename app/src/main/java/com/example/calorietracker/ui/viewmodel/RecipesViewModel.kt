@@ -2,6 +2,7 @@ package com.example.calorietracker.ui.viewmodel
 
 import com.example.calorietracker.util.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 data class RecipesUiState(
     override val loading: Boolean = false,
@@ -20,4 +21,5 @@ class RecipesViewModel(
 ) : BaseViewModel<RecipesUiState>() {
     override val internalUiState = MutableStateFlow(RecipesUiState())
     override val tag: String = "RecipesViewModel"
+    val uiState = internalUiState.asStateFlow()
 }

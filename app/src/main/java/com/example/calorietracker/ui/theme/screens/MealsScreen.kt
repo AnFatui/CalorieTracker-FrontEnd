@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,10 +35,15 @@ import com.example.calorietracker.ui.viewmodel.MealTrackingViewModel
 fun MealsScreen(
     viewModel: MealTrackingViewModel,
     onAddMealClick: (String) -> Unit,
-    onRecipeClick: () -> Unit
+    onRecipeClick: () -> Unit,
+    onSetLoading: (Boolean) -> Unit
 ) {
     var selectedDay by remember { mutableStateOf("Mo") }
-    val uiDataState by viewModel.uiDataState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.loading) {
+        onSetLoading(uiState.loading)
+    }
 
     Column(
         modifier = Modifier
@@ -57,28 +63,28 @@ fun MealsScreen(
 
         MealSection(
             title = "Frühstück",
-            meals = uiDataState.meals.filter { it.type == "Frühstück" },
+            meals = uiState.meals.filter { it.type == "Frühstück" },
             onAddClick = { onAddMealClick("Frühstück") },
             onRecipeClick = onRecipeClick
         )
 
         MealSection(
             title = "Mittagessen",
-            meals = uiDataState.meals.filter { it.type == "Mittagessen" },
+            meals = uiState.meals.filter { it.type == "Mittagessen" },
             onAddClick = { onAddMealClick("Mittagessen") },
             onRecipeClick = onRecipeClick
         )
 
         MealSection(
             title = "Abendessen",
-            meals = uiDataState.meals.filter { it.type == "Abendessen" },
+            meals = uiState.meals.filter { it.type == "Abendessen" },
             onAddClick = { onAddMealClick("Abendessen") },
             onRecipeClick = onRecipeClick
         )
 
         MealSection(
             title = "Snacks",
-            meals = uiDataState.meals.filter { it.type == "Snacks" },
+            meals = uiState.meals.filter { it.type == "Snacks" },
             onAddClick = { onAddMealClick("Snacks") },
             onRecipeClick = onRecipeClick
         )

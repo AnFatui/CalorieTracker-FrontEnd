@@ -8,11 +8,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,14 +38,20 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onWaterClick: () -> Unit,
     onWeightClick: () -> Unit,
-    onSetTitle: (String) -> Unit
+    onFastingClick: () -> Unit,
+    onSetTitle: (String) -> Unit,
+    onSetLoading: (Boolean) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val calorieProgress = uiState.calorieGoal?.let { safeProgress(uiState.calories, it) }
-    
-    val title = uiState.displayName?.let { "Hallo $it! 👋" } ?: "Hallo! 👋"
-    LaunchedEffect(title) {
-        onSetTitle(title)
+    onSetTitle(uiState.displayName?.let { displayName -> "Hallo ${displayName}! 👋" } ?: "Hallo! 👋")
+
+    LaunchedEffect(uiState.loading) {
+        onSetLoading(uiState.loading)
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
     }
 
     Column(
@@ -52,9 +60,61 @@ fun HomeScreen(
             .background(Color.Black)
             .padding(horizontal = 16.dp)
     ) {
-        Text("Heute", color = Color.Gray, fontSize = 12.sp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Text("Heute", color = Color.Gray, fontSize = 12.sp)
+        }
 
         Spacer(Modifier.height(14.dp))
+
+        // Fasten-Balken (Kompakt)
+        uiState.fastingProgress?.let { progress ->
+            val statusColor = if (uiState.isFasting) Color(0xFF22C55E) else Color(0xFF3B82F6) // Grün für Fasten, Blau für Essen
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onFastingClick() }
+                    .padding(vertical = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (uiState.isFasting) "Endet um ${uiState.fastingEndText}" else "Startet um ${uiState.fastingEndText}",
+                        color = Color.Gray,
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        text = uiState.fastingRemainingText ?: "",
+                        color = statusColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .background(Color(0xFF1F2937), RoundedCornerShape(2.dp))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .fillMaxHeight()
+                            .background(statusColor, RoundedCornerShape(2.dp))
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+        }
 
         Box(
             modifier = Modifier
@@ -173,24 +233,101 @@ fun HomeScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(78.dp)
-                .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
-                .clickable { onWeightClick() }
-                .padding(12.dp)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Gewicht", color = Color.White, fontWeight = FontWeight.Bold)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(92.dp)
+                    .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
+                    .clickable { onWeightClick() }
+                    .padding(14.dp)
+            ) {
+                Text(
+                    text = "Gewicht",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
 
-            Text(
-                text = "Aktuell: ${uiState.currentWeight} kg   Ziel: ${uiState.targetWeight} kg",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 11.sp,
-                modifier = Modifier.align(Alignment.CenterStart)
-            )
+                Column(
+                    modifier = Modifier.align(Alignment.BottomStart),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = "${uiState.currentWeight ?: "--"} kg",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Ziel: ${uiState.targetWeight ?: "--"} kg",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 11.sp
+                    )
+                }
+                Text(
+                    text = ">",
+                    color = Color.White.copy(alpha = 0.3f),
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            }
 
-            Text(">", color = Color.White, modifier = Modifier.align(Alignment.TopEnd))
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(92.dp)
+                    .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
+                    .clickable { onFastingClick() }
+                    .padding(14.dp)
+            ) {
+                Text(
+                    text = "Fasten",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
+
+                Column(
+                    modifier = Modifier.align(Alignment.BottomStart),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    if (uiState.fastingProgress != null) {
+                        Text(
+                            text = "${uiState.fastingTypeText} Methode",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (uiState.isFasting) "Aktiv" else "Geplant",
+                            color = if (uiState.isFasting) Color(0xFF22C55E) else Color.White.copy(alpha = 0.6f),
+                            fontSize = 11.sp
+                        )
+                    } else {
+                        Text(
+                            text = "Einrichten",
+                            color = Color.White.copy(alpha = 0.4f),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Klicke zum Starten",
+                            color = Color.White.copy(alpha = 0.4f),
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+                Text(
+                    text = ">",
+                    color = Color.White.copy(alpha = 0.3f),
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            }
         }
 
         Spacer(Modifier.weight(1f))
