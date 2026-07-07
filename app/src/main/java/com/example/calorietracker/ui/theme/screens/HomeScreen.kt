@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -39,7 +40,11 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val calorieProgress = uiState.calorieGoal?.let { safeProgress(uiState.calories, it) }
-    onSetTitle(uiState.displayName?.let { displayName -> "Hallo ${displayName}! 👋" } ?: "Hallo! 👋")
+    
+    val title = uiState.displayName?.let { "Hallo $it! 👋" } ?: "Hallo! 👋"
+    LaunchedEffect(title) {
+        onSetTitle(title)
+    }
 
     Column(
         modifier = Modifier

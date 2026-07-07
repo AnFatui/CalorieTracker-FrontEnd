@@ -6,9 +6,10 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -21,7 +22,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.currentRecomposeScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
@@ -72,6 +73,7 @@ class MainActivity : ComponentActivity() {
                 val snackbarHostState = remember { SnackbarHostState() }
                 val scope = rememberCoroutineScope()
                 var title by remember { mutableStateOf("Home") }
+                var barsVisible by remember { mutableStateOf(true) }
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
 
@@ -85,6 +87,10 @@ class MainActivity : ComponentActivity() {
                     scope.launch { snackbarHostState.showSnackbar(message) }
                 }
 
+                val onSetBarVisibility: (Boolean) -> Unit = {
+                    barsVisible = it
+                }
+
                 val onSetTitle: (String) -> Unit = {
                     title = it;
                 }
@@ -92,6 +98,8 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     containerColor = Color.Black,
                     topBar = {
+                        if(!barsVisible) return@Scaffold
+
                         val canNavigateBack = canPop && !isRootScreen
                         AppTopBar(
                             title = title,
@@ -99,12 +107,34 @@ class MainActivity : ComponentActivity() {
                             onNavigateBack = { navController.popBackStack() })
                     },
                     bottomBar = {
+                        if(!barsVisible) return@Scaffold
+
                         AppBottomBar(
-                            onAddClick = { navController.navigate(AddMeal) },
-                            onHomeClick = { navController.navigate(Home) },
-                            onMealsClick = { navController.navigate(MealTracking) },
-                            onProfileClick = { navController.navigate(ProfileDetails) },
-                            onStatisticsClick = { navController.navigate(Statistics) },
+                            onAddClick = {
+                                if (navController.currentDestination?.hasRoute<AddMeal>() == false) navController.navigate(
+                                    AddMeal
+                                )
+                            },
+                            onHomeClick = {
+                                if (navController.currentDestination?.hasRoute<Home>() == false) navController.navigate(
+                                    Home
+                                )
+                            },
+                            onMealsClick = {
+                                if (navController.currentDestination?.hasRoute<MealTracking>() == false) navController.navigate(
+                                    MealTracking
+                                )
+                            },
+                            onProfileClick = {
+                                if (navController.currentDestination?.hasRoute<ProfileDetails>() == false) navController.navigate(
+                                    ProfileDetails
+                                )
+                            },
+                            onStatisticsClick = {
+                                if (navController.currentDestination?.hasRoute<Statistics>() == false) navController.navigate(
+                                    Statistics
+                                )
+                            },
                             currentDestination = currentDestination
                         )
                     },
@@ -118,6 +148,7 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         modifier = Modifier.padding(paddingValues),
                         onShowMessage = onShowMessage,
+                        onSetBarVisibility = onSetBarVisibility,
                         onSetTitle = onSetTitle
                     )
                 }
@@ -130,6 +161,7 @@ class MainActivity : ComponentActivity() {
         navController: NavHostController,
         onShowMessage: (String) -> Unit,
         onSetTitle: (String) -> Unit,
+        onSetBarVisibility: (Boolean) -> Unit,
         modifier: Modifier
     ) {
         NavHost(
@@ -194,6 +226,9 @@ class MainActivity : ComponentActivity() {
             }
 
             composable<Home> {
+                onSetTitle("Home")
+                onSetBarVisibility(true)
+
                 HomeScreen(
                     viewModel = koinViewModel(),
                     onWaterClick = { navController.navigate(WaterTracking) },
@@ -203,27 +238,27 @@ class MainActivity : ComponentActivity() {
             }
 
             composable<WaterTracking> {
-                onSetTitle("")
+                onSetTitle("Wasser-Tracking")
 
                 WaterTrackingScreen(
                     viewModel = koinViewModel(),
-                    onBackClick = { navController.navigate(Home) },
                     onShowMessage = onShowMessage,
                 )
             }
 
             composable<Onboarding> {
-                onSetTitle("")
+                onSetTitle("Onboarding")
+                onSetBarVisibility(false)
 
                 OnboardingScreen(
                     viewModel = koinViewModel(),
-                    onContinueClick = {},
+                    onContinueClick = { navController.navigate(Home) },
                     onShowMessage = onShowMessage,
                 )
             }
 
             composable<Statistics> {
-                onSetTitle("")
+                onSetTitle("Statistik")
 
                 StatisticsScreen(
                     viewModel = koinViewModel(),
@@ -240,17 +275,16 @@ class MainActivity : ComponentActivity() {
             }
 
             composable<Recipes> {
-                onSetTitle("")
+                onSetTitle("Rezepte")
 
                 RecipesScreen(
                     viewModel = koinViewModel(),
-                    onBackClick = { navController.navigate(Home) },
                     onRecipeClick = { }
                 )
             }
 
             composable<ProfileDetails> {
-                onSetTitle("")
+                onSetTitle("Profil")
 
                 ProfileScreen(
                     viewModel = koinViewModel(),
@@ -259,7 +293,7 @@ class MainActivity : ComponentActivity() {
             }
 
             composable<MealTracking> {
-                onSetTitle("")
+                onSetTitle("Mahlzeiten-Tracking")
 
                 MealsScreen(
                     viewModel = koinViewModel(),
@@ -269,11 +303,11 @@ class MainActivity : ComponentActivity() {
             }
 
             composable<AddMeal> {
-                onSetTitle("")
+                onSetTitle("Mahlzeit hinzufügen")
 
                 AddMealScreen(
                     viewModel = koinViewModel(),
-                    onBackClick = { navController.navigate(Home) },
+                    //onBackClick = { navController.navigate(Home) },
                     onRecipesClick = { navController.navigate(Recipes) }
                 )
             }
@@ -287,25 +321,30 @@ class MainActivity : ComponentActivity() {
                 .fillMaxWidth()
                 .background(Color.Black)
                 .statusBarsPadding()
-                .padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 16.dp),
+                .height(64.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (showBackButton) {
-                IconButton(onClick = { onNavigateBack() }) {
-                    Icon(
-                        imageVector = MaterialSymbolsArrowBackIosNew,
-                        contentDescription = "Zurück",
-                        tint = Color.White
-                    )
+            Box(
+                modifier = Modifier.width(56.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (showBackButton) {
+                    IconButton(onClick = { onNavigateBack() }) {
+                        Icon(
+                            imageVector = MaterialSymbolsArrowBackIosNew,
+                            contentDescription = "Zurück",
+                            tint = Color.White
+                        )
+                    }
                 }
-            } else {
-                Spacer(modifier = Modifier.width(8.dp))
             }
 
             Text(
                 text = title,
                 color = Color.White,
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

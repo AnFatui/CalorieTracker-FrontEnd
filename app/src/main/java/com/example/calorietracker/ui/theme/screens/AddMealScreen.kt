@@ -24,7 +24,6 @@ import com.example.calorietracker.ui.viewmodel.AddMealViewModel
 @Composable
 fun AddMealScreen(
     viewModel: AddMealViewModel,
-    onBackClick: () -> Unit,
     onRecipesClick: () -> Unit
 ) {
     val selectedMealType = "Frühstück"
@@ -50,31 +49,6 @@ fun AddMealScreen(
             .padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(42.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "←",
-                color = Color.White,
-                fontSize = 30.sp,
-                modifier = Modifier.clickable { onBackClick() }
-            )
-
-            Spacer(Modifier.width(18.dp))
-
-            Text(
-                text = "Mahlzeit hinzufügen",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Spacer(Modifier.height(20.dp))
-
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ModeChip("Rezept wählen", selectedMode == "Rezept wählen") {
                 selectedMode = "Rezept wählen"
@@ -160,7 +134,7 @@ fun AddMealScreen(
 //                        )
 //                    )
 
-                    onBackClick()
+                    //onBackClick()
                 }
             )
 

@@ -23,7 +23,6 @@ import com.example.calorietracker.ui.viewmodel.RecipesViewModel
 
 @Composable
 fun RecipesScreen(
-    onBackClick: () -> Unit,
     onRecipeClick: () -> Unit,
     viewModel: RecipesViewModel
 ) {
@@ -36,23 +35,6 @@ fun RecipesScreen(
             .background(Color.Black)
             .padding(horizontal = 20.dp)
     ) {
-        Spacer(Modifier.height(42.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "←",
-                color = Color.White,
-                fontSize = 30.sp,
-                modifier = Modifier.clickable { onBackClick() }
-            )
-
-            Spacer(Modifier.width(18.dp))
-
-            Text("Rezepte", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        }
-
-        Spacer(Modifier.height(18.dp))
-
         OutlinedTextField(
             value = search,
             onValueChange = { search = it },

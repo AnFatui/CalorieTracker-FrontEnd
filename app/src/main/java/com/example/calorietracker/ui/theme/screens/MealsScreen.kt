@@ -45,12 +45,6 @@ fun MealsScreen(
             .background(Color.Black)
             .padding(horizontal = 20.dp)
     ) {
-        Spacer(Modifier.height(42.dp))
-
-        Text("Mahlzeiten", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-
-        Spacer(Modifier.height(20.dp))
-
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             DateBox("Mo\n20", selectedDay == "Mo") { selectedDay = "Mo" }
             DateBox("DI\n21", selectedDay == "Di") { selectedDay = "Di" }
@@ -88,8 +82,6 @@ fun MealsScreen(
             onAddClick = { onAddMealClick("Snacks") },
             onRecipeClick = onRecipeClick
         )
-
-        Spacer(Modifier.weight(1f))
     }
 }
 

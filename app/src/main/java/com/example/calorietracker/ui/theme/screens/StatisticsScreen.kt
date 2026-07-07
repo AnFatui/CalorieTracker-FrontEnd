@@ -28,12 +28,6 @@ fun StatisticsScreen(
             .background(Color.Black)
             .padding(horizontal = 20.dp)
     ) {
-        Spacer(Modifier.height(42.dp))
-
-        Text("Statistiken", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-
-        Spacer(Modifier.height(18.dp))
-
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Tab("Woche", selectedTab == "Woche") { selectedTab = "Woche" }
             Tab("Monat", selectedTab == "Monat") { selectedTab = "Monat" }
@@ -98,7 +92,7 @@ fun StatisticsScreen(
 
             "Monat" -> {
                 StatisticCard("Monatsübersicht") {
-                    if (true /*ppState.meals.isEmpty() && appState.waterMl == 0 && appState.weightEntries.isEmpty()*/) {
+                    if (true /* appState.meals.isEmpty() && appState.waterMl == 0 && appState.weightEntries.isEmpty()*/) {
                         EmptyInfo("Noch keine Monatsdaten vorhanden.")
                     } else {
                         Text(
@@ -159,8 +153,6 @@ fun StatisticsScreen(
                 color = Color.White
             )
         }
-
-        Spacer(Modifier.weight(1f))
     }
 }
 

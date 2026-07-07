@@ -35,7 +35,6 @@ import com.example.calorietracker.ui.viewmodel.WaterTrackingViewModel
 
 @Composable
 fun WaterTrackingScreen(
-    onBackClick: () -> Unit,
     viewModel: WaterTrackingViewModel,
     onShowMessage: (String) -> Unit
 ) {
@@ -51,29 +50,15 @@ fun WaterTrackingScreen(
             .padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(42.dp))
-
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "←",
-                color = Color.White,
-                fontSize = 30.sp,
-                modifier = Modifier.clickable { onBackClick() })
-            Spacer(Modifier.weight(1f))
-            Text("Wasser", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.weight(1f))
-            if (uiState.loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = Color(0xFF3B82F6),
-                    strokeWidth = 2.dp
-                )
-            } else {
-                Spacer(Modifier.width(24.dp))
-            }
+        if (uiState.loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp).padding(vertical = 8.dp),
+                color = Color(0xFF3B82F6),
+                strokeWidth = 2.dp
+            )
+        } else {
+            Spacer(Modifier.height(16.dp))
         }
-
-        Spacer(Modifier.height(24.dp))
 
         Box(contentAlignment = Alignment.Center) {
             Canvas(Modifier.size(160.dp)) {

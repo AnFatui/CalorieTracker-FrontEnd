@@ -2,24 +2,50 @@ package com.example.calorietracker.ui.theme.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.calorietracker.data.model.ActivityLevel
+import com.example.calorietracker.data.model.MetabolismType
+import com.example.calorietracker.data.model.WeightStrategy
 import com.example.calorietracker.ui.theme.components.PrimaryButton
+import com.example.calorietracker.ui.viewmodel.OnboardingUiState
 import com.example.calorietracker.ui.viewmodel.OnboardingViewModel
+import kotlin.reflect.typeOf
 
 @Composable
 fun OnboardingScreen(
@@ -46,17 +72,6 @@ fun OnboardingScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(36.dp))
-
-        // Progress Indicator
-        Text(
-            if (currentStep == 1) "━  •" else "•  ━",
-            color = Color(0xFF22C55E),
-            fontSize = 22.sp
-        )
-
-        Spacer(Modifier.height(28.dp))
-
         if (currentStep == 1) {
             StepOnePersonalInfo(uiState, viewModel)
         } else {
@@ -87,35 +102,38 @@ fun OnboardingScreen(
                 Text("Zurück", color = Color.Gray)
             }
         }
-
-        Spacer(Modifier.height(42.dp))
     }
 }
 
-private fun canNavigateNext(step: Int, state: com.example.calorietracker.ui.viewmodel.OnboardingUiState): Boolean {
+private fun canNavigateNext(
+    step: Int,
+    state: OnboardingUiState
+): Boolean {
     return if (step == 1) {
-        state.displayName.isNotBlank() && 
-        state.username.isNotBlank() && 
-        !state.isUsernameTaken && 
-        state.age.isNotBlank() && 
-        state.heightCm.isNotBlank()
+        !state.displayName.isNullOrBlank() &&
+                !state.username.isNullOrBlank() &&
+                !state.isUsernameTaken &&
+                (state.age ?: 0) > 0 &&
+                (state.heightCm ?: 0) > 0
     } else {
-        val isWeightMaintenance = state.selectedGoal == "Gewicht halten"
-        state.selectedGoal.isNotBlank() &&
-                state.currentWeight.isNotBlank() &&
-                (isWeightMaintenance || state.targetWeight.isNotBlank())
+        val isWeightMaintenance = state.weightStrategy == WeightStrategy.MAINTAIN_WEIGHT
+        val currentWeightValid = (state.currentWeight ?: 0.0) > 0.0
+        val targetWeightValid = isWeightMaintenance || (state.targetWeight ?: 0.0) > 0.0
+        val waterGoalValid = (state.waterGoalLiters ?: 0.0) in 0.5..10.0
+
+        currentWeightValid && targetWeightValid && waterGoalValid
     }
 }
 
 @Composable
 private fun StepOnePersonalInfo(
-    uiState: com.example.calorietracker.ui.viewmodel.OnboardingUiState,
+    uiState: OnboardingUiState,
     viewModel: OnboardingViewModel
 ) {
     Text("Über dich", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
 
     Text(
-        text = "Lass uns dich kurz kennenlernen, um deinen Bedarf zu ermitteln.",
+        text = "Lass uns dich kurz kennenlernen.",
         color = Color.White.copy(alpha = 0.8f),
         fontSize = 13.sp,
         textAlign = TextAlign.Center,
@@ -140,27 +158,70 @@ private fun StepOnePersonalInfo(
         placeholder = "z.B. max_m",
         modifier = Modifier.fillMaxWidth(),
         isError = uiState.isUsernameTaken,
-        helperText = if (uiState.isUsernameTaken) "Dieser Name ist bereits vergeben" else "Wird für den Login benötigt",
+        helperText = if (uiState.isUsernameTaken) "Dieser Name ist bereits vergeben" else null,
         onValueChange = { viewModel.updateUsername(it) }
     )
 
     Spacer(Modifier.height(20.dp))
 
-    Text(
-        "Geschlecht",
-        color = Color.White,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.fillMaxWidth()
-    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF1F2937), RoundedCornerShape(16.dp))
+            .padding(12.dp)
+    ) {
+        Text(
+            "Metabolismus",
+            color = Color.White.copy(alpha = 0.7f),
+            fontSize = 11.sp
+        )
 
-    Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(12.dp))
 
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        GoalBox("Männlich", uiState.sex == "Männlich", Modifier.weight(1f)) {
-            viewModel.updateSex("Männlich")
-        }
-        GoalBox("Weiblich", uiState.sex == "Weiblich", Modifier.weight(1f)) {
-            viewModel.updateSex("Weiblich")
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp)
+                    .background(
+                        if (uiState.metabolismType == MetabolismType.MALE) Color(0xFF22C55E) else Color(
+                            0xFF374151
+                        ),
+                        RoundedCornerShape(12.dp)
+                    )
+                    .clickable { viewModel.updateSex(MetabolismType.MALE) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "Männlich",
+                    color = if (uiState.metabolismType == MetabolismType.MALE) Color.Black else Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp)
+                    .background(
+                        if (uiState.metabolismType == MetabolismType.FEMALE) Color(0xFF22C55E) else Color(
+                            0xFF374151
+                        ),
+                        RoundedCornerShape(12.dp)
+                    )
+                    .clickable { viewModel.updateSex(MetabolismType.FEMALE) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "Weiblich",
+                    color = if (uiState.metabolismType == MetabolismType.FEMALE) Color.Black else Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 
@@ -173,7 +234,8 @@ private fun StepOnePersonalInfo(
             placeholder = "25",
             modifier = Modifier.weight(1f),
             keyboardType = KeyboardType.Number,
-            onValueChange = { viewModel.updateAge(it.filter { c -> c.isDigit() }) }
+            onValueChange = { viewModel.updateAge(it) },
+            validator = { if (it != null && it <= 0) "Ungültig" else null }
         )
 
         InputBox(
@@ -182,53 +244,18 @@ private fun StepOnePersonalInfo(
             placeholder = "175",
             modifier = Modifier.weight(1f),
             keyboardType = KeyboardType.Number,
-            onValueChange = { viewModel.updateHeight(it.filter { c -> c.isDigit() }) }
+            onValueChange = { viewModel.updateHeight(it) },
+            validator = { if (it != null && it <= 0) "Ungültig" else null }
         )
-    }
-
-    Spacer(Modifier.height(20.dp))
-
-    Text(
-        "Aktivitätslevel",
-        color = Color.White,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(Modifier.height(14.dp))
-
-    val activityLevels = listOf("Wenig aktiv", "Moderat aktiv", "Sehr aktiv")
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        activityLevels.forEach { level ->
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(50.dp)
-                    .background(
-                        if (uiState.activityLevel == level) Color(0xFF22C55E) else Color(0xFF1F2937),
-                        RoundedCornerShape(12.dp)
-                    )
-                    .clickable { viewModel.updateActivityLevel(level) },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    level,
-                    color = if (uiState.activityLevel == level) Color.Black else Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
     }
 }
 
 @Composable
 private fun StepTwoGoalsAndWeight(
-    uiState: com.example.calorietracker.ui.viewmodel.OnboardingUiState,
+    uiState: OnboardingUiState,
     viewModel: OnboardingViewModel
 ) {
-    val isWeightMaintenance = uiState.selectedGoal == "Gewicht halten"
+    val isWeightMaintenance = uiState.weightStrategy == WeightStrategy.MAINTAIN_WEIGHT
 
     Text("Deine Ziele", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
 
@@ -252,21 +279,33 @@ private fun StepTwoGoalsAndWeight(
     Spacer(Modifier.height(14.dp))
 
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        GoalBox("Abnehmen", uiState.selectedGoal == "Abnehmen", Modifier.weight(1f)) {
-            viewModel.updateGoal("Abnehmen")
+        GoalBox(
+            "Abnehmen",
+            uiState.weightStrategy == WeightStrategy.LOSE_WEIGHT,
+            Modifier.weight(1f)
+        ) {
+            viewModel.updateGoal(WeightStrategy.LOSE_WEIGHT)
         }
 
-        GoalBox("Muskeln\naufbauen", uiState.selectedGoal == "Muskeln aufbauen", Modifier.weight(1f)) {
-            viewModel.updateGoal("Muskeln aufbauen")
+        GoalBox(
+            "Muskeln\naufbauen",
+            uiState.weightStrategy == WeightStrategy.GAIN_WEIGHT,
+            Modifier.weight(1f)
+        ) {
+            viewModel.updateGoal(WeightStrategy.GAIN_WEIGHT)
         }
 
-        GoalBox("Gewicht\nhalten", uiState.selectedGoal == "Gewicht halten", Modifier.weight(1f)) {
-            viewModel.updateGoal("Gewicht halten")
-            viewModel.updateTargetWeight("")
+        GoalBox(
+            "Gewicht\nhalten",
+            uiState.weightStrategy == WeightStrategy.MAINTAIN_WEIGHT,
+            Modifier.weight(1f)
+        ) {
+            viewModel.updateGoal(WeightStrategy.MAINTAIN_WEIGHT)
+            viewModel.updateTargetWeight(null)
         }
     }
 
-    if (!isWeightMaintenance && uiState.selectedGoal.isNotBlank()) {
+    if (!isWeightMaintenance) {
         Spacer(Modifier.height(28.dp))
 
         Text(
@@ -287,7 +326,7 @@ private fun StepTwoGoalsAndWeight(
             value = uiState.weeklyGoal.toFloat(),
             onValueChange = { viewModel.updateWeeklyGoal(it.toDouble()) },
             valueRange = 0.1f..1.0f,
-            steps = 9,
+            steps = 8,
             colors = SliderDefaults.colors(
                 thumbColor = Color(0xFF22C55E),
                 activeTrackColor = Color(0xFF22C55E),
@@ -304,18 +343,27 @@ private fun StepTwoGoalsAndWeight(
             value = uiState.currentWeight,
             placeholder = "z.B. 70",
             modifier = Modifier.fillMaxWidth(),
-            keyboardType = KeyboardType.Number,
-            onValueChange = { viewModel.updateCurrentWeight(it.replace(',', '.')) }
+            keyboardType = KeyboardType.Decimal,
+            onValueChange = { viewModel.updateCurrentWeight(it) },
+            validator = { weight ->
+                if (weight != null && (weight !in 30.0..300.0)) "Ungültig" else null
+            }
         )
     } else {
-        Row(horizontalArrangement = Arrangement.spacedBy(18.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             InputBox(
                 label = "Aktuelles Gewicht",
                 value = uiState.currentWeight,
                 placeholder = "z.B. 70",
                 modifier = Modifier.weight(1f),
-                keyboardType = KeyboardType.Number,
-                onValueChange = { viewModel.updateCurrentWeight(it.replace(',', '.')) }
+                keyboardType = KeyboardType.Decimal,
+                onValueChange = { viewModel.updateCurrentWeight(it) },
+                validator = { weight ->
+                    if (weight != null && (weight !in 30.0..300.0)) "Ungültig" else null
+                }
             )
 
             InputBox(
@@ -323,11 +371,117 @@ private fun StepTwoGoalsAndWeight(
                 value = uiState.targetWeight,
                 placeholder = "z.B. 65",
                 modifier = Modifier.weight(1f),
-                keyboardType = KeyboardType.Number,
-                onValueChange = { viewModel.updateTargetWeight(it.replace(',', '.')) }
+                keyboardType = KeyboardType.Decimal,
+                onValueChange = { viewModel.updateTargetWeight(it) },
+                validator = { weight ->
+                    if (weight != null && (weight !in 30.0..300.0)) "Ungültig" else null
+                }
             )
         }
     }
+
+    // Prognose für das Zielgewicht
+    if (!isWeightMaintenance) {
+        val current = uiState.currentWeight
+        val target = uiState.targetWeight
+        
+        if (current != null && target != null) {
+            val weightDiff = kotlin.math.abs(target - current)
+            val weeksToGoal = if (uiState.weeklyGoal > 0 && weightDiff > 0) {
+                kotlin.math.ceil(weightDiff / uiState.weeklyGoal).toInt()
+            } else null
+
+            weeksToGoal?.let { weeks ->
+                Spacer(Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF22C55E).copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "In ca. $weeks Wochen kannst du dein Ziel erreichen!",
+                        color = Color(0xFF22C55E),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+
+    Spacer(Modifier.height(32.dp))
+
+    Text(
+        "Dein Aktivitätslevel",
+        color = Color.White,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    Spacer(Modifier.height(14.dp))
+
+    val activityLevels = listOf(
+        ActivityLevel.SEDENTARY to "Sitzend (Bürojob / wenig Bewegung)",
+        ActivityLevel.LIGHTLY_ACTIVE to "Leicht aktiv (viel Stehen / Gehen)",
+        ActivityLevel.MODERATELY_ACTIVE to "Moderat aktiv (viel Bewegung)",
+        ActivityLevel.VERY_ACTIVE to "Sehr aktiv (körperliche Arbeit)",
+        ActivityLevel.EXTREMELY_ACTIVE to "Extrem aktiv (Leistungssport)"
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+        activityLevels.forEach { (level, label) ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(58.dp)
+                    .background(
+                        if (uiState.activityLevel == level) Color(0xFF22C55E) else Color(0xFF1F2937),
+                        RoundedCornerShape(16.dp)
+                    )
+                    .clickable { viewModel.updateActivityLevel(level) }
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(
+                    label,
+                    color = if (uiState.activityLevel == level) Color.Black else Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+
+    Spacer(Modifier.height(32.dp))
+
+    Text(
+        "Dein tägliches Wasserziel",
+        color = Color.White,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    Text(
+        "${String.format("%.1f", uiState.waterGoalLiters ?: 2.5)} Liter pro Tag",
+        color = Color.White.copy(alpha = 0.85f),
+        fontSize = 13.sp,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    Slider(
+        value = (uiState.waterGoalLiters ?: 2.5).toFloat(),
+        onValueChange = { viewModel.updateWaterGoal(it.toDouble()) },
+        valueRange = 1.0f..5.0f,
+        steps = 39, // (5.0 - 1.0) / 0.1 = 40 Intervalle, also 39 Steps dazwischen
+        colors = SliderDefaults.colors(
+            thumbColor = Color(0xFF22C55E),
+            activeTrackColor = Color(0xFF22C55E),
+            inactiveTrackColor = Color(0xFF1F2937)
+        )
+    )
 }
 
 @Composable
@@ -358,65 +512,139 @@ private fun GoalBox(
 }
 
 @Composable
-private fun InputBox(
+private inline fun <reified T> InputBox(
     label: String,
-    value: String,
+    value: T?,
     placeholder: String,
     modifier: Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
     isError: Boolean = false,
     helperText: String? = null,
-    onValueChange: (String) -> Unit
+    crossinline validator: (T?) -> String? = { null },
+    crossinline onValueChange: (T?) -> Unit
 ) {
+    // Hilfsfunktion zur Formatierung: Verhindert ".0" bei ganzen Zahlen
+    val formatValue = { v: T? ->
+        when (v) {
+            null -> ""
+            is Double -> if (v % 1.0 == 0.0) v.toLong().toString() else v.toString()
+            else -> v.toString()
+        }
+    }
+
+    // Wir nutzen ein lokales State-Objekt für den Text, damit der Nutzer frei tippen kann (z.B. "70.")
+    // ohne dass es sofort vom ViewModel-Format überschrieben wird.
+    var textState by remember { mutableStateOf(formatValue(value)) }
+
+    // Synchronisation bei externen Änderungen (z.B. Reset des Formulars)
+    LaunchedEffect(value) {
+        val isInt = typeOf<T>() == typeOf<Int?>() || typeOf<T>() == typeOf<Int>()
+        val isDouble = typeOf<T>() == typeOf<Double?>() || typeOf<T>() == typeOf<Double>()
+
+        val shouldUpdate = when {
+            isInt -> textState.toIntOrNull() != (value as? Int)
+            isDouble -> textState.replace(',', '.').toDoubleOrNull() != (value as? Double)
+            else -> textState != (value as? String ?: "")
+        }
+
+        if (shouldUpdate) {
+            textState = formatValue(value)
+        }
+    }
+
+    val errorFromValidator = remember(value) { validator(value) }
+    val finalIsError = isError || errorFromValidator != null
+    val finalHelperText = errorFromValidator ?: helperText
+
     Column(modifier = modifier) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .height(90.dp)
                 .background(
-                    color = if (isError) Color(0xFF450a0a) else Color(0xFF1F2937),
+                    color = if (finalIsError) Color(0xFF450a0a) else Color(0xFF1F2937),
                     shape = RoundedCornerShape(16.dp)
                 )
-                .padding(12.dp)
+                // Hier steuern wir die inneren Abstände der gesamten Box
+                .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 8.dp)
         ) {
             Text(
                 label,
-                color = if (isError) Color(0xFFef4444) else Color.White.copy(alpha = 0.7f),
-                fontSize = 11.sp
+                color = if (finalIsError) Color(0xFFef4444) else Color.White.copy(alpha = 0.7f),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium
             )
 
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                placeholder = { Text(placeholder, color = Color.Gray, fontSize = 12.sp) },
-                singleLine = true,
-                isError = isError,
-                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(58.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    cursorColor = Color.White,
-                    errorIndicatorColor = Color.Transparent,
-                    errorContainerColor = Color.Transparent
-                ),
-                textStyle = TextStyle(
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+            // Ein kleiner, definierter Abstand zwischen Label und Eingabe
+            Spacer(modifier = Modifier.height(2.dp))
+
+            val onInputChanged: (String) -> Unit = { input ->
+                val isInt = typeOf<T>() == typeOf<Int?>() || typeOf<T>() == typeOf<Int>()
+                val filtered = if (isInt) {
+                    input.filter { it.isDigit() }
+                } else {
+                    input.replace(',', '.').filterIndexed { index, char ->
+                        char.isDigit() || (char == '.' && input.indexOf('.') == index)
+                    }
+                }
+                textState = filtered
+
+                val newValue = if (isInt) {
+                    filtered.toIntOrNull()
+                } else {
+                    filtered.toDoubleOrNull()
+                }
+                onValueChange(newValue as T?)
+            }
+
+            // Hilfsvariable für den Body-Typ-Check
+            val isStringType = typeOf<T>() == typeOf<String?>() || typeOf<T>() == typeOf<String>()
+            val isNumberType = typeOf<T>() == typeOf<Double?>() || typeOf<T>() == typeOf<Int?>() ||
+                    typeOf<T>() == typeOf<Double>() || typeOf<T>() == typeOf<Int>()
+
+            if (isStringType || isNumberType) {
+                BasicTextField(
+                    value = textState,
+                    onValueChange = if (isStringType) {
+                        { input -> textState = input; onValueChange(input as T?) }
+                    } else onInputChanged,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                    textStyle = TextStyle(
+                        color = Color.White,
+                        fontSize = 18.sp, // Bestimmt die feste Höhe
+                        fontWeight = FontWeight.Bold
+                    ),
+                    cursorBrush = SolidColor(Color.White),
+                    modifier = Modifier.fillMaxWidth(),
+                    decorationBox = { innerTextField ->
+                        // Box stapelt den Placeholder flach unter/über den Text
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (textState.isEmpty()) {
+                                Text(
+                                    text = placeholder,
+                                    color = Color.Gray,
+                                    fontSize = 18.sp, // MUSS identisch mit textStyle sein!
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            // Das eigentliche Eingabefeld liegt immer an derselben Stelle
+                            innerTextField()
+                        }
+                    }
                 )
-            )
-        }
-        
-        if (helperText != null) {
+            } else {
+                throw IllegalArgumentException("Unsupported type '${typeOf<T>()}'")
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Bleibt starr auf einer Zeilenhöhe, verschiebt nichts mehr
             Text(
-                text = helperText,
-                color = if (isError) Color(0xFFef4444) else Color.White.copy(alpha = 0.6f),
+                text = finalHelperText ?: " ",
+                color = if (finalIsError) Color(0xFFef4444) else Color.White.copy(alpha = 0.6f),
                 fontSize = 10.sp,
-                modifier = Modifier.padding(start = 12.dp, top = 4.dp)
+                maxLines = 1
             )
         }
     }
