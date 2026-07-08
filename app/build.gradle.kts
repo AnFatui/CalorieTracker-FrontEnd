@@ -79,4 +79,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     implementation(libs.retrofit)
+
+    // Health Connect
+    implementation(libs.androidx.health.connect.client)
 }
