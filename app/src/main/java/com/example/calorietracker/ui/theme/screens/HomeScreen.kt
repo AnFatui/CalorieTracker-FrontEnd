@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -29,6 +30,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.calorietracker.ui.theme.components.MacroCircle
 import com.example.calorietracker.ui.theme.components.TrackingCard
 import com.example.calorietracker.ui.viewmodel.HomeViewModel
@@ -39,6 +43,7 @@ fun HomeScreen(
     onWaterClick: () -> Unit,
     onWeightClick: () -> Unit,
     onFastingClick: () -> Unit,
+    onStepsClick: () -> Unit,
     onSetTitle: (String) -> Unit,
     onSetLoading: (Boolean) -> Unit
 ) {
@@ -50,8 +55,15 @@ fun HomeScreen(
         onSetLoading(uiState.loading)
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.refresh()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Column(
@@ -223,11 +235,12 @@ fun HomeScreen(
 
             TrackingCard(
                 title = "Schritte",
-                value = "${uiState.steps} / ${uiState.stepGoal}",
+                value = uiState.stepGoal?.let { goal -> "${uiState.steps} / $goal" } ?: "${uiState.steps} Schritte",
                 icon = "👣",
                 accentColor = Color(0xFFA855F7),
                 progress = safeProgress(uiState.steps, uiState.stepGoal ?: 0),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = onStepsClick
             )
         }
 

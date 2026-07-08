@@ -40,3 +40,6 @@ object AddMeal
 
 @Serializable
 object Fasting
+
+@Serializable
+object StepTracking

@@ -17,6 +17,7 @@ import com.example.calorietracker.ui.viewmodel.RecipeDetailViewModel
 import com.example.calorietracker.ui.viewmodel.RecipesViewModel
 import com.example.calorietracker.ui.viewmodel.RegisterViewModel
 import com.example.calorietracker.ui.viewmodel.StatisticsViewModel
+import com.example.calorietracker.ui.viewmodel.StepTrackingViewModel
 import com.example.calorietracker.ui.viewmodel.WaterTrackingViewModel
 import com.example.calorietracker.ui.viewmodel.WeightTrackingViewModel
 import com.example.calorietracker.util.ExceptionMapper
@@ -50,6 +51,7 @@ val appModule = module {
     viewModelOf(::RecipeDetailViewModel)
     viewModelOf(::RegisterViewModel)
     viewModelOf(::StatisticsViewModel)
+    viewModelOf(::StepTrackingViewModel)
     viewModelOf(::WaterTrackingViewModel)
     viewModelOf(::WeightTrackingViewModel)
 }
