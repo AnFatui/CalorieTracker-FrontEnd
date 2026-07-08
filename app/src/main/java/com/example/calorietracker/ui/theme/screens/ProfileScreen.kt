@@ -55,6 +55,7 @@ fun ProfileScreen(
 ) {
     val context = LocalContext.current
     var currentProfilePage by remember { mutableStateOf<String?>(null) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     val uiState by viewModel.uiState.collectAsState()
     val displayName = uiState.displayName ?: "None"
 
@@ -66,6 +67,7 @@ fun ProfileScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
+            selectedImageUri = it
             context.contentResolver.openInputStream(it)?.use { inputStream ->
                 val bytes = inputStream.readBytes()
                 viewModel.updateProfileImage(bytes)
@@ -98,7 +100,7 @@ fun ProfileScreen(
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
-                model = uiState.avatarUrl ?: "https://via.placeholder.com/150",
+                model = selectedImageUri ?: uiState.avatarUrl ?: "https://via.placeholder.com/150",
                 contentDescription = "Profilbild",
                 modifier = Modifier
                     .size(86.dp)

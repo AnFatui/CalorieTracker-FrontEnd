@@ -3,6 +3,7 @@ package com.example.calorietracker.ui.viewmodel
 import android.util.Log
 import com.example.calorietracker.data.model.FastingSchedule
 import com.example.calorietracker.data.repository.FastingScheduleRepository
+import com.example.calorietracker.data.repository.HealthConnectRepository
 import com.example.calorietracker.data.repository.ProfileRepository
 import com.example.calorietracker.data.repository.WaterRepository
 import com.example.calorietracker.data.repository.WeightRepository
@@ -54,6 +55,7 @@ class HomeViewModel(
     private val weightRepository: WeightRepository,
     private val profileRepository: ProfileRepository,
     private val fastingRepository: FastingScheduleRepository,
+    private val healthConnectRepository: HealthConnectRepository,
     override val sessionManager: SessionManager,
 ) : BaseViewModel<HomeUiState>() {
     override val tag: String = "HomeViewModel"
@@ -82,6 +84,7 @@ class HomeViewModel(
                 val fastingSchedule = fastingRepository.getFastingSchedule(userId)
 
                 val presentWaterMl = getPresentWaterLevel(userId)
+                val todaySteps = healthConnectRepository.getTodaySteps()
 
                 internalUiState.update {
                     val now = getCurrentLocalTime()
@@ -93,6 +96,7 @@ class HomeViewModel(
                         calorieGoal = profile.calorieGoal,
                         waterMl = presentWaterMl,
                         waterGoalMl = profile.waterGoalMl,
+                        steps = todaySteps,
                         stepGoal = profile.dailyStepGoal,
                         fastingProgress = fastingSchedule?.let { s -> calculateCurrentProgress(s, isFastingActive, now) },
                         isFasting = isFastingActive,

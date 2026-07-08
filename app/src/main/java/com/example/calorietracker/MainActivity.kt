@@ -55,6 +55,7 @@ import com.example.calorietracker.ui.theme.screens.ProfileScreen
 import com.example.calorietracker.ui.theme.screens.RecipesScreen
 import com.example.calorietracker.ui.theme.screens.RegisterScreen
 import com.example.calorietracker.ui.theme.screens.StatisticsScreen
+import com.example.calorietracker.ui.theme.screens.StepTrackingScreen
 import com.example.calorietracker.ui.theme.screens.WaterTrackingScreen
 import com.example.calorietracker.ui.theme.screens.WeightTrackingScreen
 import com.example.calorietracker.util.SessionManager
@@ -246,6 +247,7 @@ class MainActivity : ComponentActivity() {
                     onWaterClick = { navController.navigate(WaterTracking) },
                     onWeightClick = { navController.navigate(WeightTracking) },
                     onFastingClick = { navController.navigate(Fasting) },
+                    onStepsClick = { navController.navigate(StepTracking) },
                     onSetTitle = onSetTitle,
                     onSetLoading = onSetLoading
                 )
@@ -299,6 +301,16 @@ class MainActivity : ComponentActivity() {
                 onSetBarVisibility(true)
 
                 WeightTrackingScreen(
+                    viewModel = koinViewModel(),
+                    onSetLoading = onSetLoading
+                )
+            }
+
+            composable<StepTracking> {
+                onSetTitle("Schritte")
+                onSetBarVisibility(true)
+
+                StepTrackingScreen(
                     viewModel = koinViewModel(),
                     onSetLoading = onSetLoading
                 )
