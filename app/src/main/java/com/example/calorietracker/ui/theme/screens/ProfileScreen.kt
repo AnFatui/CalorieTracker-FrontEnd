@@ -25,6 +25,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,12 +50,17 @@ import com.example.calorietracker.ui.viewmodel.ProfileViewModel
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    onSetLoading: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     var currentProfilePage by remember { mutableStateOf<String?>(null) }
     val uiState by viewModel.uiState.collectAsState()
     val displayName = uiState.displayName ?: "None"
+
+    LaunchedEffect(uiState.loading) {
+        onSetLoading(uiState.loading)
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()

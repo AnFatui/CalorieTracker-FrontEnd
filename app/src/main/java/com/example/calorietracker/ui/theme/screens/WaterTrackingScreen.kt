@@ -21,6 +21,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -36,12 +37,17 @@ import com.example.calorietracker.ui.viewmodel.WaterTrackingViewModel
 @Composable
 fun WaterTrackingScreen(
     viewModel: WaterTrackingViewModel,
-    onShowMessage: (String) -> Unit
+    onShowMessage: (String) -> Unit,
+    onSetLoading: (Boolean) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     val progress = if (uiState.waterGoalMl <= 0) 0f
     else uiState.totalAmountMl.toFloat() / uiState.waterGoalMl.toFloat()
+
+    LaunchedEffect(uiState.loading) {
+        onSetLoading(uiState.loading)
+    }
 
     Column(
         modifier = Modifier
@@ -52,104 +58,115 @@ fun WaterTrackingScreen(
     ) {
         if (uiState.loading) {
             CircularProgressIndicator(
-                modifier = Modifier.size(24.dp).padding(vertical = 8.dp),
+                modifier = Modifier
+                    .size(24.dp)
+                    .padding(vertical = 8.dp),
                 color = Color(0xFF3B82F6),
                 strokeWidth = 2.dp
             )
         } else {
             Spacer(Modifier.height(16.dp))
-        }
-
-        Box(contentAlignment = Alignment.Center) {
-            Canvas(Modifier.size(160.dp)) {
-                drawArc(
-                    color = Color(0xFF1F2937),
-                    startAngle = -90f,
-                    sweepAngle = 360f,
-                    useCenter = false,
-                    style = Stroke(16.dp.toPx(), cap = StrokeCap.Round)
+            if (uiState.loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color(0xFF3B82F6),
+                    strokeWidth = 2.dp
                 )
+            } else {
+                Spacer(Modifier.width(24.dp))
+            }
 
-                if (progress > 0f) {
+            Box(contentAlignment = Alignment.Center) {
+                Canvas(Modifier.size(160.dp)) {
                     drawArc(
-                        color = Color(0xFF3B82F6),
+                        color = Color(0xFF1F2937),
                         startAngle = -90f,
-                        sweepAngle = 360f * progress.coerceIn(0f, 1f),
+                        sweepAngle = 360f,
                         useCenter = false,
                         style = Stroke(16.dp.toPx(), cap = StrokeCap.Round)
                     )
+
+                    if (progress > 0f) {
+                        drawArc(
+                            color = Color(0xFF3B82F6),
+                            startAngle = -90f,
+                            sweepAngle = 360f * progress.coerceIn(0f, 1f),
+                            useCenter = false,
+                            style = Stroke(16.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                    }
                 }
-            }
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("💧", fontSize = 30.sp)
-                Text(
-                    "${String.format("%.1f", uiState.totalAmountMl / 1000.0)} L",
-                    color = Color.White,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "/ ${String.format("%.1f", uiState.waterGoalMl / 1000.0)} L",
-                    color = Color.Gray,
-                    fontSize = 18.sp
-                )
-            }
-        }
-
-        Spacer(Modifier.height(28.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            WaterQuickAddButton("250ml") { viewModel.addWater(250) }
-            WaterQuickAddButton("500ml") { viewModel.addWater(500) }
-            WaterQuickAddButton("750ml") { viewModel.addWater(750) }
-        }
-
-        Spacer(Modifier.height(28.dp))
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
-                .padding(14.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Heute", color = Color.White, fontWeight = FontWeight.Bold)
-                if (uiState.todayLogs.isNotEmpty()) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("💧", fontSize = 30.sp)
                     Text(
-                        "Alle löschen",
-                        color = Color(0xFFEF4444),
-                        fontSize = 12.sp,
-                        modifier = Modifier.clickable {
-                            viewModel.deleteAllLogsForToday()
-                        }
+                        "${String.format("%.1f", uiState.totalAmountMl / 1000.0)} L",
+                        color = Color.White,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "/ ${String.format("%.1f", uiState.waterGoalMl / 1000.0)} L",
+                        color = Color.Gray,
+                        fontSize = 18.sp
                     )
                 }
             }
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(28.dp))
 
-            if (uiState.todayLogs.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Noch kein Wasser eingetragen.", color = Color.Gray, fontSize = 14.sp)
-                }
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(uiState.todayLogs.reversed()) { log ->
-                        WaterLogItem(
-                            amount = log.amountMl,
-                            time = log.loggedAt ?: "",
-                            onDelete = { log.id?.let { viewModel.deleteLog(it) } }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                WaterQuickAddButton("250ml") { viewModel.addWater(250) }
+                WaterQuickAddButton("500ml") { viewModel.addWater(500) }
+                WaterQuickAddButton("750ml") { viewModel.addWater(750) }
+            }
+
+            Spacer(Modifier.height(28.dp))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
+                    .padding(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Heute", color = Color.White, fontWeight = FontWeight.Bold)
+                    if (uiState.todayLogs.isNotEmpty()) {
+                        Text(
+                            "Alle löschen",
+                            color = Color(0xFFEF4444),
+                            fontSize = 12.sp,
+                            modifier = Modifier.clickable {
+                                viewModel.deleteAllLogsForToday()
+                            }
                         )
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                if (uiState.todayLogs.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Noch kein Wasser eingetragen.", color = Color.Gray, fontSize = 14.sp)
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(uiState.todayLogs.reversed()) { log ->
+                            WaterLogItem(
+                                amount = log.amountMl,
+                                time = log.loggedAt ?: "",
+                                onDelete = { log.id?.let { viewModel.deleteLog(it) } }
+                            )
+                        }
                     }
                 }
             }
@@ -158,7 +175,7 @@ fun WaterTrackingScreen(
 }
 
 @Composable
-private fun WaterQuickAddButton(label: String, onClick: () -> Unit) {
+fun WaterQuickAddButton(label: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .background(Color(0xFF1F2937), RoundedCornerShape(14.dp))
@@ -171,7 +188,7 @@ private fun WaterQuickAddButton(label: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun WaterLogItem(amount: Int, time: String, onDelete: () -> Unit) {
+fun WaterLogItem(amount: Int, time: String, onDelete: () -> Unit) {
     val displayTime = if (time.length >= 16) time.substring(11, 16) else time
 
     Row(

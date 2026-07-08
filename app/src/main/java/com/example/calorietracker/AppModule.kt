@@ -1,10 +1,12 @@
 package com.example.calorietracker
 
+import com.example.calorietracker.data.repository.FastingScheduleRepository
 import com.example.calorietracker.data.repository.ProfileRepository
 import com.example.calorietracker.data.repository.WaterRepository
 import com.example.calorietracker.data.repository.WeightRepository
 import com.example.calorietracker.providers.SupabaseClientProvider
 import com.example.calorietracker.ui.viewmodel.AddMealViewModel
+import com.example.calorietracker.ui.viewmodel.FastingViewModel
 import com.example.calorietracker.ui.viewmodel.HomeViewModel
 import com.example.calorietracker.ui.viewmodel.LoginViewModel
 import com.example.calorietracker.ui.viewmodel.MealTrackingViewModel
@@ -23,6 +25,7 @@ import org.koin.dsl.module
 
 val appModule = module {
     // Repos
+    single { FastingScheduleRepository(get()) }
     single { ProfileRepository(get()) }
     single { WaterRepository(get()) }
     single { WeightRepository(get()) }
@@ -34,6 +37,7 @@ val appModule = module {
 
     // ViewModels
     viewModelOf(::AddMealViewModel)
+    viewModelOf(::FastingViewModel)
     viewModelOf(::HomeViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::MealTrackingViewModel)

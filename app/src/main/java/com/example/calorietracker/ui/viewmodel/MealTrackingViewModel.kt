@@ -6,13 +6,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-data class MealTrackingUiDataState(
-    val meals: List<MealLog> = emptyList()
-)
-
 data class MealTrackingUiState(
     override val loading: Boolean = false,
-    override val error: String? = null
+    override val error: String? = null,
+    val meals: List<MealLog> = emptyList()
 ) : UiState<MealTrackingUiState> {
     override fun copyFlags(
         loading: Boolean,
@@ -29,6 +26,4 @@ class MealTrackingViewModel(
     override val tag: String = "MealTrackingViewModel"
 
     val uiState = internalUiState.asStateFlow()
-    private val _uiDataState = MutableStateFlow(MealTrackingUiDataState())
-    val uiDataState: StateFlow<MealTrackingUiDataState> = _uiDataState.asStateFlow()
 }

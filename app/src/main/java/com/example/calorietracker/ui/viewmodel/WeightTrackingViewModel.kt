@@ -1,7 +1,5 @@
 package com.example.calorietracker.ui.viewmodel
 
-
-import androidx.lifecycle.viewModelScope
 import com.example.calorietracker.data.model.AddWeightLogDTO
 import com.example.calorietracker.data.model.WeightLog
 import com.example.calorietracker.data.repository.ProfileRepository
@@ -10,18 +8,23 @@ import com.example.calorietracker.util.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.math.roundToInt
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+
+enum class WeightTimeRange {
+    WEEK, MONTH, YEAR
+}
 
 data class WeightTrackingUiState(
     override val loading: Boolean = false,
     override val error: String? = null,
     val currentWeightKg: Double? = null,
     val targetWeightKg: Double? = null,
-    val weightLogs: List<WeightLog> = listOf()
+    val weightLogs: List<WeightLog> = listOf(),
+    val selectedTimeRange: WeightTimeRange = WeightTimeRange.WEEK
 ) : UiState<WeightTrackingUiState> {
     override fun copyFlags(
         loading: Boolean,
@@ -47,58 +50,64 @@ class WeightTrackingViewModel(
     @OptIn(ExperimentalTime::class)
     private fun loadData() {
         tryAndLogScope {
-            // Get data
-            val userId = sessionManager.currentUserId ?: return@tryAndLogScope
-            val profile = profileRepository.getProfile(userId) ?: return@tryAndLogScope
-            val logs = weightRepository.getWeightLogs(userId)
+            getUserId { userId ->
+                val profile = profileRepository.getProfile(userId)
+                val logs = weightRepository.getWeightLogs(userId).sortedByDescending { it.loggedAt }
 
-            // Assign it
-            internalUiState.update {
-                it.copy(
-                    weightLogs = logs,
-                    currentWeightKg = logs.maxByOrNull { l -> l.loggedAt }?.weightKg ?: profile.targetWeightKg ?: 70.0,
-                    targetWeightKg = profile.targetWeightKg
-                )
+                internalUiState.update {
+                    it.copy(
+                        weightLogs = logs,
+                        currentWeightKg = logs.firstOrNull()?.weightKg ?: profile?.targetWeightKg
+                        ?: 70.0,
+                        targetWeightKg = profile?.targetWeightKg
+                    )
+                }
             }
         }
     }
 
-    @OptIn(ExperimentalTime::class)
+    fun setTimeRange(range: WeightTimeRange) {
+        internalUiState.update { it.copy(selectedTimeRange = range) }
+    }
+
     fun adjustWeight(delta: Double) {
         val currentWeight = internalUiState.value.currentWeightKg ?: return
-        val newWeight = currentWeight + delta
+        val newWeight = ((currentWeight + delta) * 10.0).roundToInt() / 10.0
         updateWeight(newWeight)
     }
 
     @OptIn(ExperimentalTime::class)
     fun updateWeight(weightKg: Double) {
-        // Optimistic update
+        // Optimistisches UI Update
         internalUiState.update { it.copy(currentWeightKg = weightKg) }
 
-        viewModelScope.launch {
-            tryAndLogScope {
-                getUserId { userId ->
-                    val latestLog = weightRepository.getLatestWeightLog(userId)
-                    val now = Clock.System.now()
-                    val today = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
-                    
-                    val isToday = latestLog != null && 
-                            latestLog.loggedAt.toLocalDateTime(TimeZone.currentSystemDefault()).date == today
+        tryAndLogScope {
+            getUserId { userId ->
+                val now = Clock.System.now()
+                val today = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
 
-                    if (isToday && latestLog.id != null) {
-                        weightRepository.updateWeightLog(latestLog.id, weightKg)
+                // Wir nutzen die Logs aus dem aktuellen State
+                val currentLogs = internalUiState.value.weightLogs
+                val todayLog = currentLogs
+                    .filter { it.loggedAt.toLocalDateTime(TimeZone.currentSystemDefault()).date == today }
+                    .maxByOrNull { it.loggedAt }
+
+                val updatedLog = if (todayLog != null && todayLog.id != null) {
+                    weightRepository.updateWeightLog(todayLog.id, weightKg)
+                } else {
+                    weightRepository.addWeightLog(
+                        AddWeightLogDTO(userId = userId, weightKg = weightKg, loggedAt = now)
+                    )
+                }
+
+                // Lokal die Liste updaten, statt alles neu zu laden
+                internalUiState.update { state ->
+                    val newList = if (todayLog != null) {
+                        state.weightLogs.map { if (it.id == updatedLog.id) updatedLog else it }
                     } else {
-                        weightRepository.addWeightLog(
-                            AddWeightLogDTO(
-                                userId = userId,
-                                weightKg = weightKg,
-                                loggedAt = now
-                            )
-                        )
+                        (listOf(updatedLog) + state.weightLogs).sortedByDescending { it.loggedAt }
                     }
-                    // Refresh logs to update history
-                    val logs = weightRepository.getWeightLogs(userId)
-                    internalUiState.update { it.copy(weightLogs = logs) }
+                    state.copy(weightLogs = newList, currentWeightKg = weightKg)
                 }
             }
         }

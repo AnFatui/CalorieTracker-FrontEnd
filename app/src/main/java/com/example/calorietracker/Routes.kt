@@ -37,3 +37,6 @@ object ProfileDetails
 
 @Serializable
 object AddMeal
+
+@Serializable
+object Fasting
