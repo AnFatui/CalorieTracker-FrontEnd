@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,7 +31,7 @@ fun LoginScreen(
     onShowMessage: (String) -> Unit,
     viewModel: LoginViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -40,7 +41,6 @@ fun LoginScreen(
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
             onShowMessage(it)
-            viewModel.clearError()
         }
     }
 
@@ -107,7 +107,19 @@ fun LoginScreen(
             textAlign = TextAlign.End
         )
 
-        Spacer(Modifier.height(46.dp))
+        if (uiState.error != null) {
+            Spacer(Modifier.height(20.dp))
+            Text(
+                text = uiState.error!!,
+                color = Color(0xFFF87171),
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(20.dp))
+        } else {
+            Spacer(Modifier.height(46.dp))
+        }
 
         if (uiState.loading) {
             CircularProgressIndicator(color = Color(0xFF22C55E))

@@ -14,13 +14,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,9 +31,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.calorietracker.ui.theme.components.MacroCircle
 import com.example.calorietracker.ui.theme.components.TrackingCard
 import com.example.calorietracker.ui.viewmodel.HomeViewModel
+import androidx.compose.ui.text.intl.Locale as ComposeLocale
 
 @Composable
 fun HomeScreen(
@@ -47,7 +47,7 @@ fun HomeScreen(
     onSetTitle: (String) -> Unit,
     onSetLoading: (Boolean) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val calorieProgress = uiState.calorieGoal?.let { safeProgress(uiState.calories, it) }
     onSetTitle(uiState.displayName?.let { displayName -> "Hallo ${displayName}! 👋" } ?: "Hallo! 👋")
 
@@ -84,7 +84,8 @@ fun HomeScreen(
 
         // Fasten-Balken (Kompakt)
         uiState.fastingProgress?.let { progress ->
-            val statusColor = if (uiState.isFasting) Color(0xFF22C55E) else Color(0xFF3B82F6) // Grün für Fasten, Blau für Essen
+            val statusColor =
+                if (uiState.isFasting) Color(0xFF22C55E) else Color(0xFF3B82F6) // Grün für Fasten, Blau für Essen
 
             Column(
                 modifier = Modifier
@@ -235,7 +236,8 @@ fun HomeScreen(
 
             TrackingCard(
                 title = "Schritte",
-                value = uiState.stepGoal?.let { goal -> "${uiState.steps} / $goal" } ?: "${uiState.steps} Schritte",
+                value = uiState.stepGoal?.let { goal -> "${uiState.steps} / $goal" }
+                    ?: "${uiState.steps} Schritte",
                 icon = "👣",
                 accentColor = Color(0xFFA855F7),
                 progress = safeProgress(uiState.steps, uiState.stepGoal ?: 0),
@@ -318,7 +320,9 @@ fun HomeScreen(
                         )
                         Text(
                             text = if (uiState.isFasting) "Aktiv" else "Geplant",
-                            color = if (uiState.isFasting) Color(0xFF22C55E) else Color.White.copy(alpha = 0.6f),
+                            color = if (uiState.isFasting) Color(0xFF22C55E) else Color.White.copy(
+                                alpha = 0.6f
+                            ),
                             fontSize = 11.sp
                         )
                     } else {
@@ -352,6 +356,7 @@ private fun safeProgress(value: Int, goal: Int): Float {
     return (value.toFloat() / goal.toFloat()).coerceIn(0f, 1f)
 }
 
+@Composable
 private fun formatLiter(ml: Int): String {
-    return String.format("%.1f", ml / 1000.0)
+    return String.format(ComposeLocale.current.platformLocale, "%.1f", ml / 1000.0)
 }

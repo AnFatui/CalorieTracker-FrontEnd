@@ -10,6 +10,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,7 +32,7 @@ fun RegisterScreen(
     onShowMessage: (String) -> Unit,
     viewModel: RegisterViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -41,7 +42,6 @@ fun RegisterScreen(
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
             onShowMessage(it)
-            viewModel.clearError()
         }
     }
 
@@ -89,6 +89,18 @@ fun RegisterScreen(
         }
 
         Spacer(Modifier.height(32.dp))
+
+        if (uiState.error != null) {
+            Text(
+                text = uiState.error!!,
+                color = Color(0xFFEF4444),
+                fontSize = 13.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
 
         if (uiState.loading) {
             CircularProgressIndicator(color = Color(0xFF22C55E))

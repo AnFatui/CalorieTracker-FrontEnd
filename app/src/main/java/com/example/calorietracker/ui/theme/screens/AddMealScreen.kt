@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.calorietracker.ui.theme.components.PrimaryButton
 import com.example.calorietracker.ui.viewmodel.AddMealViewModel
 
@@ -28,7 +29,7 @@ fun AddMealScreen(
     onRecipesClick: () -> Unit,
     onSetLoading: (Boolean) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedMealType = "Frühstück"
     var selectedMode by remember { mutableStateOf("Manuell") }
     var selectedMealTypeLocal by remember { mutableStateOf(selectedMealType) }

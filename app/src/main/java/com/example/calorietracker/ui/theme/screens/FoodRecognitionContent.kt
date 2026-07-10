@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.intl.Locale as ComposeLocale
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.calorietracker.ui.theme.components.PrimaryButton
@@ -40,7 +42,7 @@ fun FoodRecognitionContent(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var selectedImageUri by remember {
         mutableStateOf<Uri?>(null)
@@ -307,7 +309,7 @@ private fun RecognitionResultCard(
 
             Text(
                 text = "Sicherheit: " +
-                        String.format("%.1f %%", confidence * 100.0),
+                        String.format(ComposeLocale.current.platformLocale, "%.1f %%", confidence * 100.0),
                 color = Color(0xFF22C55E),
                 fontSize = 13.sp
             )
@@ -318,7 +320,7 @@ private fun RecognitionResultCard(
 
             Text(
                 text = "Gesamtdauer: " +
-                        String.format("%.0f ms", milliseconds),
+                        String.format(ComposeLocale.current.platformLocale, "%.0f ms", milliseconds),
                 color = Color.Gray,
                 fontSize = 12.sp
             )

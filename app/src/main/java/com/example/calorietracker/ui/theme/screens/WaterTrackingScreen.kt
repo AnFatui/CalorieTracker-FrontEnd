@@ -22,8 +22,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.intl.Locale as ComposeLocale
 import com.example.calorietracker.ui.viewmodel.WaterTrackingViewModel
 
 @Composable
@@ -40,7 +41,7 @@ fun WaterTrackingScreen(
     onShowMessage: (String) -> Unit,
     onSetLoading: (Boolean) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val progress = if (uiState.waterGoalMl <= 0) 0f
     else uiState.totalAmountMl.toFloat() / uiState.waterGoalMl.toFloat()
@@ -100,13 +101,13 @@ fun WaterTrackingScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("💧", fontSize = 30.sp)
                     Text(
-                        "${String.format("%.1f", uiState.totalAmountMl / 1000.0)} L",
+                        "${String.format(ComposeLocale.current.platformLocale, "%.1f", uiState.totalAmountMl / 1000.0)} L",
                         color = Color.White,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "/ ${String.format("%.1f", uiState.waterGoalMl / 1000.0)} L",
+                        "/ ${String.format(ComposeLocale.current.platformLocale, "%.1f", uiState.waterGoalMl / 1000.0)} L",
                         color = Color.Gray,
                         fontSize = 18.sp
                     )

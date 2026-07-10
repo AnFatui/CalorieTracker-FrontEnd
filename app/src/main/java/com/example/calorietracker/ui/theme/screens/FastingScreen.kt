@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -15,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.intl.Locale as ComposeLocale
 import com.example.calorietracker.ui.theme.components.PrimaryButton
 import com.example.calorietracker.ui.viewmodel.FastingPreset
 import com.example.calorietracker.ui.viewmodel.FastingViewModel
@@ -25,7 +27,7 @@ fun FastingScreen(
     viewModel: FastingViewModel,
     onSetLoading: (Boolean) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(uiState.loading) {
         onSetLoading(uiState.loading)
     }
@@ -211,7 +213,7 @@ fun FastingCard(
         } else {
             FastingInfoRow(label = "Methode", value = "${duration}:${24 - duration}")
             HorizontalDivider(color = Color.White.copy(alpha = 0.1f), modifier = Modifier.padding(vertical = 12.dp))
-            FastingInfoRow(label = "Startzeit", value = String.format("%02d:%02d Uhr", startTime.hour, startTime.minute))
+            FastingInfoRow(label = "Startzeit", value = String.format(ComposeLocale.current.platformLocale, "%02d:%02d Uhr", startTime.hour, startTime.minute))
             
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -247,7 +249,7 @@ fun NumberPicker(value: Int, range: IntRange, label: String, onValueChange: (Int
                 Text("-", color = Color.White, fontSize = 20.sp)
             }
             Text(
-                text = String.format("%02d", value),
+                text = String.format(ComposeLocale.current.platformLocale, "%02d", value),
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,

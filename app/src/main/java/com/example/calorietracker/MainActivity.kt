@@ -39,6 +39,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.example.calorietracker.data.repository.ProfileRepository
 import com.example.calorietracker.ui.theme.CalorieTrackerTheme
 import com.example.calorietracker.ui.theme.components.AppBottomBar
@@ -137,7 +138,7 @@ class MainActivity : ComponentActivity() {
                             },
                             onProfileClick = {
                                 if (navController.currentDestination?.hasRoute<ProfileDetails>() == false) navController.navigate(
-                                    ProfileDetails
+                                    ProfileDetails()
                                 )
                             },
                             onStatisticsClick = {
@@ -327,13 +328,26 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            composable<ProfileDetails> {
-                onSetTitle("Profil")
+            composable<ProfileDetails> { backStackEntry ->
+                val profileRoute = backStackEntry.toRoute<ProfileDetails>()
                 onSetBarVisibility(true)
 
                 ProfileScreen(
                     viewModel = koinViewModel(),
-                    onLogoutClick = { navController.navigate(Login) },
+                    page = profileRoute.page,
+                    onNavigate = { newPage ->
+                        navController.navigate(ProfileDetails(newPage))
+                    },
+                    onFastingClick = {
+                        navController.navigate(Fasting)
+                    },
+                    onLogoutClick = {
+                        navController.navigate(Login) {
+                            popUpTo(Home) { inclusive = true }
+                        }
+                    },
+                    onShowMessage = onShowMessage,
+                    onSetTitle = onSetTitle,
                     onSetLoading = onSetLoading
                 )
             }
