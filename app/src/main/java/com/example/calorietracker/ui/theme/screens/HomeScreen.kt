@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -70,6 +72,7 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
     ) {
         Row(
@@ -255,23 +258,27 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(92.dp)
+                    .height(112.dp)
                     .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
                     .clickable { onWeightClick() }
                     .padding(14.dp)
             ) {
                 Text(
-                    text = "Gewicht",
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    modifier = Modifier.align(Alignment.TopStart)
+                    text = ">",
+                    color = Color.White.copy(alpha = 0.3f),
+                    modifier = Modifier.align(Alignment.TopEnd)
                 )
 
-                Column(
-                    modifier = Modifier.align(Alignment.BottomStart),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
+                Column {
+                    Text(
+                        text = "Gewicht",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+
                     Text(
                         text = "${uiState.currentWeight ?: "--"} kg",
                         color = Color.White,
@@ -284,33 +291,32 @@ fun HomeScreen(
                         fontSize = 11.sp
                     )
                 }
-                Text(
-                    text = ">",
-                    color = Color.White.copy(alpha = 0.3f),
-                    modifier = Modifier.align(Alignment.TopEnd)
-                )
             }
 
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(92.dp)
+                    .height(112.dp)
                     .background(Color(0xFF1F2937), RoundedCornerShape(18.dp))
                     .clickable { onFastingClick() }
                     .padding(14.dp)
             ) {
                 Text(
-                    text = "Fasten",
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    modifier = Modifier.align(Alignment.TopStart)
+                    text = ">",
+                    color = Color.White.copy(alpha = 0.3f),
+                    modifier = Modifier.align(Alignment.TopEnd)
                 )
 
-                Column(
-                    modifier = Modifier.align(Alignment.BottomStart),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
+                Column {
+                    Text(
+                        text = "Fasten",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+
                     if (uiState.fastingProgress != null) {
                         Text(
                             text = "${uiState.fastingTypeText} Methode",
@@ -339,15 +345,10 @@ fun HomeScreen(
                         )
                     }
                 }
-                Text(
-                    text = ">",
-                    color = Color.White.copy(alpha = 0.3f),
-                    modifier = Modifier.align(Alignment.TopEnd)
-                )
             }
         }
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(32.dp))
     }
 }
 
