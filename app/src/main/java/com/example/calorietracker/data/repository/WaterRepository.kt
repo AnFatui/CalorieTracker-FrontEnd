@@ -29,6 +29,25 @@ class WaterRepository(
             }.decodeList<WaterLog>()
     }
     
+    suspend fun getWaterLogsInRange(
+        userId: String,
+        startInclusive: LocalDate,
+        endExclusive: LocalDate
+    ): List<WaterLog> = withContext(Dispatchers.IO) {
+        val formatter = DateTimeFormatter.ISO_LOCAL_DATE
+        val startIso = "${startInclusive.format(formatter)}T00:00:00Z"
+        val endIso = "${endExclusive.format(formatter)}T00:00:00Z"
+
+        supabase.from("water_logs")
+            .select {
+                filter {
+                    eq("user_id", userId)
+                    gte("logged_at", startIso)
+                    lt("logged_at", endIso)
+                }
+            }.decodeList<WaterLog>()
+    }
+
     suspend fun deleteWaterLog(logId: String) = withContext(Dispatchers.IO) {
         supabase.from("water_logs").delete {
             filter {

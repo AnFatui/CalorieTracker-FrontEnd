@@ -102,4 +102,20 @@ object CalorieCalculator {
             weeklyGoalKg
         )
     }
+
+    /**
+     * Macro gram goals are not stored directly - only the user's chosen macro ratio
+     * (percentage of calories) is persisted, and grams are derived from it on the fly.
+     */
+    fun macroGoalsFromRatios(
+        calorieGoal: Int,
+        proteinRatioPercent: Int?,
+        carbsRatioPercent: Int?,
+        fatRatioPercent: Int?
+    ): CalorieResult {
+        val protein = (calorieGoal * (proteinRatioPercent ?: 30) / 100.0 / 4).toInt()
+        val carbs = (calorieGoal * (carbsRatioPercent ?: 40) / 100.0 / 4).toInt()
+        val fat = (calorieGoal * (fatRatioPercent ?: 30) / 100.0 / 9).toInt()
+        return CalorieResult(calorieGoal, protein, carbs, fat)
+    }
 }
