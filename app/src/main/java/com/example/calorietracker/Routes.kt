@@ -1,5 +1,6 @@
 package com.example.calorietracker
 
+import com.example.calorietracker.ui.theme.screens.ProfilePage
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -33,7 +34,7 @@ object MealTracking
 object Recipes
 
 @Serializable
-object ProfileDetails
+data class ProfileDetails(val page: ProfilePage = ProfilePage.OVERVIEW)
 
 @Serializable
 object AddMeal

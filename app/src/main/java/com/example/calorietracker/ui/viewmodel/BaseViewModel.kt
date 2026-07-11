@@ -26,10 +26,11 @@ abstract class BaseViewModel<S : UiState<S>> : ViewModel() {
                     onError(e)
                 } else {
                     Log.e(tag, "Operation failed", e)
+                    val message = e.localizedMessage ?: e.message ?: "Operation failed"
                     internalUiState.update {
                         it.copyFlags(
                             loading = false,
-                            error = "Operation failed" // TODO: localization
+                            error = message
                         )
                     }
                 }

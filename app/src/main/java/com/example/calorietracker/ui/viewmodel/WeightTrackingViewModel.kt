@@ -15,7 +15,7 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 enum class WeightTimeRange {
-    WEEK, MONTH, YEAR
+    WEEK, YEAR
 }
 
 data class WeightTrackingUiState(

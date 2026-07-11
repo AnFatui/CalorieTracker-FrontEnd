@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.LocalTime
+import java.util.Locale
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -86,6 +87,25 @@ class HomeViewModel(
                 val presentWaterMl = getPresentWaterLevel(userId)
                 val todaySteps = healthConnectRepository.getTodaySteps()
 
+                // Calculate fallback calories if no manual goal is set
+                val calcResult = if (profile.calorieGoal == null || profile.proteinGoal == null || profile.carbsGoal == null || profile.fatGoal == null) {
+                    val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                    val age = profile.birthYear?.let { currentYear - it } ?: 25
+                    val latestWeight = currentWeightLog?.weightKg
+
+                    if (latestWeight != null && profile.heightCm != null && profile.activityLevel != null && profile.weightStrategy != null) {
+                        com.example.calorietracker.util.CalorieCalculator.calculate(
+                            metabolismType = profile.metabolismType,
+                            age = age,
+                            heightCm = profile.heightCm,
+                            weightKg = latestWeight,
+                            activityLevel = profile.activityLevel,
+                            weightStrategy = profile.weightStrategy,
+                            weeklyGoalKg = profile.weeklyGoal ?: 0.5
+                        )
+                    } else null
+                } else null
+
                 internalUiState.update {
                     val now = getCurrentLocalTime()
                     val isFastingActive = fastingSchedule?.let { s -> isCurrentlyFasting(s, now) } ?: false
@@ -93,7 +113,10 @@ class HomeViewModel(
                         displayName =  profile.displayName,
                         currentWeight = currentWeightLog?.weightKg,
                         targetWeight = profile.targetWeightKg,
-                        calorieGoal = profile.calorieGoal,
+                        calorieGoal = profile.calorieGoal ?: calcResult?.calories,
+                        proteinGoal = profile.proteinGoal ?: calcResult?.protein,
+                        carbsGoal = profile.carbsGoal ?: calcResult?.carbs,
+                        fatGoal = profile.fatGoal ?: calcResult?.fat,
                         waterMl = presentWaterMl,
                         waterGoalMl = profile.waterGoalMl,
                         steps = todaySteps,
@@ -115,9 +138,9 @@ class HomeViewModel(
         
         return if (isFasting) {
             val endHour = (startHour + schedule.durationHours) % 24
-            String.format("%02d:%02d Uhr", endHour, startMinute)
+            String.format(Locale.getDefault(), "%02d:%02d Uhr", endHour, startMinute)
         } else {
-            String.format("%02d:%02d Uhr", startHour, startMinute)
+            String.format(Locale.getDefault(), "%02d:%02d Uhr", startHour, startMinute)
         }
     }
 

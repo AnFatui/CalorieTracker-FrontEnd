@@ -1,5 +1,7 @@
 package com.example.calorietracker.data.model
 
+import androidx.annotation.StringRes
+import com.example.calorietracker.R
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -9,6 +11,7 @@ data class Profile(
     @SerialName("id") val id: String,
     @SerialName("user_name") val username: String,
     @Transient val displayName: String? = null,
+    @Transient val email: String? = null,
     @SerialName("height_cm") val heightCm: Int? = null,
     @SerialName("weight_goal_kg") val targetWeightKg: Double? = null,
     @SerialName("birth_year") val birthYear: Int? = null,
@@ -20,6 +23,9 @@ data class Profile(
     @SerialName("protein_goal") val proteinGoal: Int? = null,
     @SerialName("carbs_goal") val carbsGoal: Int? = null,
     @SerialName("fat_goal") val fatGoal: Int? = null,
+    @SerialName("protein_percentage_goal") val proteinRatio: Int? = null,
+    @SerialName("carbs_percentage_goal") val carbsRatio: Int? = null,
+    @SerialName("fat_percentage_goal") val fatRatio: Int? = null,
     @SerialName("water_goal_ml") val waterGoalMl: Int? = null,
     @SerialName("daily_step_goal") val dailyStepGoal: Int? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
@@ -54,8 +60,15 @@ enum class WeightStrategy {
 
     @SerialName("gain_weight")
     GAIN_WEIGHT
-
 }
+
+@get:StringRes
+val WeightStrategy.displayText: Int
+    get() = when (this) {
+        WeightStrategy.LOSE_WEIGHT -> R.string.weight_strategy_lose
+        WeightStrategy.MAINTAIN_WEIGHT -> R.string.weight_strategy_maintain
+        WeightStrategy.GAIN_WEIGHT -> R.string.weight_strategy_gain
+    }
 
 @Serializable
 enum class MetabolismType {

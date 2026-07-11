@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">CalorieTracker</string>
+    <string name="profile_overview">Übersicht</string>
+    <string name="profile_personal_data">Persönliche Daten</string>
+    <string name="profile_goals">Ziele</string>
+    <string name="profile_fasting">Fasten</string>
+    <string name="profile_notifications">Benachrichtigungen</string>
+    <string name="profile_settings">Einstellungen</string>
+    <string name="profile_help_support">Hilfe &amp; Support</string>
+    <string name="profile_email_update_sent">Bestätigungs-E-Mail wurde gesendet. Bitte bestätige den Link in deinem Postfach, um die Änderung abzuschließen.</string>
+
+    <!-- Weight Strategies -->
+    <string name="weight_strategy_lose">Abnehmen</string>
+    <string name="weight_strategy_maintain">Gewicht halten</string>
+    <string name="weight_strategy_gain">Zunehmen</string>
 </resources>

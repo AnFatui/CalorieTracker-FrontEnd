@@ -8,7 +8,6 @@ import com.example.calorietracker.data.model.Profile
 import com.example.calorietracker.data.model.WeightStrategy
 import com.example.calorietracker.data.repository.ProfileRepository
 import com.example.calorietracker.data.repository.WeightRepository
-import com.example.calorietracker.util.CalorieCalculator
 import com.example.calorietracker.util.SessionManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -140,21 +139,9 @@ class OnboardingViewModel(
                 val targetWeight = state.targetWeight ?: weight
                 val height = state.heightCm
                 val ageValue = state.age ?: throw IllegalArgumentException("Age cannot be null")
-                val heightValue =
-                    state.heightCm ?: throw IllegalArgumentException("Height cannot be null")
 
                 val currentYear = Calendar.getInstance().get(Calendar.YEAR)
                 val birthYear = currentYear - ageValue
-
-                val calcResult = CalorieCalculator.calculate(
-                    metabolismType = state.metabolismType,
-                    age = ageValue,
-                    heightCm = heightValue,
-                    weightKg = weight,
-                    activityLevel = state.activityLevel,
-                    weightStrategy = state.weightStrategy,
-                    weeklyGoalKg = state.weeklyGoal
-                )
 
                 val updatedProfile = Profile(
                     id = userId,
@@ -166,10 +153,13 @@ class OnboardingViewModel(
                     weightStrategy = state.weightStrategy,
                     weeklyGoal = state.weeklyGoal,
                     targetWeightKg = targetWeight,
-                    calorieGoal = calcResult.calories,
-                    proteinGoal = calcResult.protein,
-                    carbsGoal = calcResult.carbs,
-                    fatGoal = calcResult.fat,
+                    calorieGoal = null, // Set to null for automatic calculation
+                    proteinGoal = null,
+                    carbsGoal = null,
+                    fatGoal = null,
+                    proteinRatio = 30, // Default 30%
+                    carbsRatio = 40,   // Default 40%
+                    fatRatio = 30,     // Default 30%
                     waterGoalMl = state.waterGoalLiters?.let { (it * 1000).toInt() },
                     activityLevel = state.activityLevel,
                     onboardingDone = true

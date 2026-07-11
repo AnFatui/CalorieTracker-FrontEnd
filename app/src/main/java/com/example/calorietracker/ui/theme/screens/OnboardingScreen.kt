@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Slider
@@ -23,29 +21,27 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.calorietracker.data.model.ActivityLevel
 import com.example.calorietracker.data.model.MetabolismType
 import com.example.calorietracker.data.model.WeightStrategy
+import com.example.calorietracker.ui.theme.components.InputBox
 import com.example.calorietracker.ui.theme.components.PrimaryButton
 import com.example.calorietracker.ui.viewmodel.OnboardingUiState
 import com.example.calorietracker.ui.viewmodel.OnboardingViewModel
-import kotlin.reflect.typeOf
+import androidx.compose.ui.text.intl.Locale as ComposeLocale
 
 @Composable
 fun OnboardingScreen(
@@ -53,7 +49,7 @@ fun OnboardingScreen(
     onShowMessage: (String) -> Unit,
     viewModel: OnboardingViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var currentStep by remember { mutableIntStateOf(1) }
 
     // Observe error state
@@ -102,6 +98,8 @@ fun OnboardingScreen(
                 Text("Zurück", color = Color.Gray)
             }
         }
+
+        Spacer(Modifier.height(32.dp))
     }
 }
 
@@ -315,8 +313,10 @@ private fun StepTwoGoalsAndWeight(
             modifier = Modifier.fillMaxWidth()
         )
 
+        val weeklyGoalText =
+            String.format(ComposeLocale.current.platformLocale, "%.1f", uiState.weeklyGoal)
         Text(
-            "${String.format("%.1f", uiState.weeklyGoal)} kg pro Woche",
+            "$weeklyGoalText kg pro Woche",
             color = Color.White.copy(alpha = 0.85f),
             fontSize = 13.sp,
             modifier = Modifier.fillMaxWidth()
@@ -384,7 +384,7 @@ private fun StepTwoGoalsAndWeight(
     if (!isWeightMaintenance) {
         val current = uiState.currentWeight
         val target = uiState.targetWeight
-        
+
         if (current != null && target != null) {
             val weightDiff = kotlin.math.abs(target - current)
             val weeksToGoal = if (uiState.weeklyGoal > 0 && weightDiff > 0) {
@@ -396,7 +396,10 @@ private fun StepTwoGoalsAndWeight(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF22C55E).copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                        .background(
+                            Color(0xFF22C55E).copy(alpha = 0.15f),
+                            RoundedCornerShape(12.dp)
+                        )
                         .padding(12.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -464,8 +467,10 @@ private fun StepTwoGoalsAndWeight(
         modifier = Modifier.fillMaxWidth()
     )
 
+    val waterGoalText =
+        String.format(ComposeLocale.current.platformLocale, "%.1f", uiState.waterGoalLiters ?: 2.5)
     Text(
-        "${String.format("%.1f", uiState.waterGoalLiters ?: 2.5)} Liter pro Tag",
+        "$waterGoalText Liter pro Tag",
         color = Color.White.copy(alpha = 0.85f),
         fontSize = 13.sp,
         modifier = Modifier.fillMaxWidth()
@@ -508,144 +513,5 @@ private fun GoalBox(
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
-    }
-}
-
-@Composable
-private inline fun <reified T> InputBox(
-    label: String,
-    value: T?,
-    placeholder: String,
-    modifier: Modifier,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    isError: Boolean = false,
-    helperText: String? = null,
-    crossinline validator: (T?) -> String? = { null },
-    crossinline onValueChange: (T?) -> Unit
-) {
-    // Hilfsfunktion zur Formatierung: Verhindert ".0" bei ganzen Zahlen
-    val formatValue = { v: T? ->
-        when (v) {
-            null -> ""
-            is Double -> if (v % 1.0 == 0.0) v.toLong().toString() else v.toString()
-            else -> v.toString()
-        }
-    }
-
-    // Wir nutzen ein lokales State-Objekt für den Text, damit der Nutzer frei tippen kann (z.B. "70.")
-    // ohne dass es sofort vom ViewModel-Format überschrieben wird.
-    var textState by remember { mutableStateOf(formatValue(value)) }
-
-    // Synchronisation bei externen Änderungen (z.B. Reset des Formulars)
-    LaunchedEffect(value) {
-        val isInt = typeOf<T>() == typeOf<Int?>() || typeOf<T>() == typeOf<Int>()
-        val isDouble = typeOf<T>() == typeOf<Double?>() || typeOf<T>() == typeOf<Double>()
-
-        val shouldUpdate = when {
-            isInt -> textState.toIntOrNull() != (value as? Int)
-            isDouble -> textState.replace(',', '.').toDoubleOrNull() != (value as? Double)
-            else -> textState != (value as? String ?: "")
-        }
-
-        if (shouldUpdate) {
-            textState = formatValue(value)
-        }
-    }
-
-    val errorFromValidator = remember(value) { validator(value) }
-    val finalIsError = isError || errorFromValidator != null
-    val finalHelperText = errorFromValidator ?: helperText
-
-    Column(modifier = modifier) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(90.dp)
-                .background(
-                    color = if (finalIsError) Color(0xFF450a0a) else Color(0xFF1F2937),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                // Hier steuern wir die inneren Abstände der gesamten Box
-                .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 8.dp)
-        ) {
-            Text(
-                label,
-                color = if (finalIsError) Color(0xFFef4444) else Color.White.copy(alpha = 0.7f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium
-            )
-
-            // Ein kleiner, definierter Abstand zwischen Label und Eingabe
-            Spacer(modifier = Modifier.height(2.dp))
-
-            val onInputChanged: (String) -> Unit = { input ->
-                val isInt = typeOf<T>() == typeOf<Int?>() || typeOf<T>() == typeOf<Int>()
-                val filtered = if (isInt) {
-                    input.filter { it.isDigit() }
-                } else {
-                    input.replace(',', '.').filterIndexed { index, char ->
-                        char.isDigit() || (char == '.' && input.indexOf('.') == index)
-                    }
-                }
-                textState = filtered
-
-                val newValue = if (isInt) {
-                    filtered.toIntOrNull()
-                } else {
-                    filtered.toDoubleOrNull()
-                }
-                onValueChange(newValue as T?)
-            }
-
-            // Hilfsvariable für den Body-Typ-Check
-            val isStringType = typeOf<T>() == typeOf<String?>() || typeOf<T>() == typeOf<String>()
-            val isNumberType = typeOf<T>() == typeOf<Double?>() || typeOf<T>() == typeOf<Int?>() ||
-                    typeOf<T>() == typeOf<Double>() || typeOf<T>() == typeOf<Int>()
-
-            if (isStringType || isNumberType) {
-                BasicTextField(
-                    value = textState,
-                    onValueChange = if (isStringType) {
-                        { input -> textState = input; onValueChange(input as T?) }
-                    } else onInputChanged,
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-                    textStyle = TextStyle(
-                        color = Color.White,
-                        fontSize = 18.sp, // Bestimmt die feste Höhe
-                        fontWeight = FontWeight.Bold
-                    ),
-                    cursorBrush = SolidColor(Color.White),
-                    modifier = Modifier.fillMaxWidth(),
-                    decorationBox = { innerTextField ->
-                        // Box stapelt den Placeholder flach unter/über den Text
-                        Box(contentAlignment = Alignment.CenterStart) {
-                            if (textState.isEmpty()) {
-                                Text(
-                                    text = placeholder,
-                                    color = Color.Gray,
-                                    fontSize = 18.sp, // MUSS identisch mit textStyle sein!
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            // Das eigentliche Eingabefeld liegt immer an derselben Stelle
-                            innerTextField()
-                        }
-                    }
-                )
-            } else {
-                throw IllegalArgumentException("Unsupported type '${typeOf<T>()}'")
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Bleibt starr auf einer Zeilenhöhe, verschiebt nichts mehr
-            Text(
-                text = finalHelperText ?: " ",
-                color = if (finalIsError) Color(0xFFef4444) else Color.White.copy(alpha = 0.6f),
-                fontSize = 10.sp,
-                maxLines = 1
-            )
-        }
     }
 }
