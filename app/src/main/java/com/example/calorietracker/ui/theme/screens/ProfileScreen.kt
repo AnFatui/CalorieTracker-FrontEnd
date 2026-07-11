@@ -1,11 +1,15 @@
 package com.example.calorietracker.ui.theme.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,16 +50,20 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.calorietracker.R
 import com.example.calorietracker.data.model.ActivityLevel
 import com.example.calorietracker.data.model.MetabolismType
 import com.example.calorietracker.data.model.WeightStrategy
+import com.example.calorietracker.notifications.WaterReminderInterval
 import com.example.calorietracker.ui.theme.components.InputBox
 import com.example.calorietracker.ui.theme.components.PrimaryButton
+import com.example.calorietracker.ui.viewmodel.NotificationSettingsViewModel
 import com.example.calorietracker.ui.viewmodel.ProfileUiState
 import com.example.calorietracker.ui.viewmodel.ProfileViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.ui.text.intl.Locale as ComposeLocale
 
 enum class ProfilePage {
@@ -988,14 +996,102 @@ private fun MacroPreview(label: String, grams: Int, recGrams: Int, color: Color)
 }
 
 @Composable
-private fun NotificationsPage() {
-    var waterRemind by remember { mutableStateOf(true) }
-    var mealRemind by remember { mutableStateOf(false) }
+private fun NotificationsPage(viewModel: NotificationSettingsViewModel = koinViewModel()) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            pendingAction?.invoke()
+        }
+        pendingAction = null
+    }
+
+    fun runWithNotificationPermission(action: () -> Unit) {
+        val permissionNeeded = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+
+        if (permissionNeeded) {
+            pendingAction = action
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            action()
+        }
+    }
 
     Column {
         Spacer(Modifier.height(8.dp))
-        SettingSwitch("Wasser-Erinnerungen", waterRemind) { waterRemind = it }
-        SettingSwitch("Mahlzeiten-Tracker", mealRemind) { mealRemind = it }
+        SettingSwitch("Wasser-Erinnerungen", uiState.waterRemindersEnabled) { checked ->
+            if (checked) {
+                runWithNotificationPermission { viewModel.setWaterRemindersEnabled(true) }
+            } else {
+                viewModel.setWaterRemindersEnabled(false)
+            }
+        }
+
+        if (uiState.waterRemindersEnabled) {
+            WaterIntervalSelector(
+                selected = uiState.waterReminderInterval,
+                onSelect = { viewModel.setWaterReminderInterval(it) }
+            )
+        }
+
+        SettingSwitch("Fasten-Erinnerungen", uiState.fastingRemindersEnabled) { checked ->
+            if (checked) {
+                runWithNotificationPermission { viewModel.setFastingRemindersEnabled(true) }
+            } else {
+                viewModel.setFastingRemindersEnabled(false)
+            }
+        }
+    }
+}
+
+@Composable
+private fun WaterIntervalSelector(
+    selected: WaterReminderInterval,
+    onSelect: (WaterReminderInterval) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        WaterReminderInterval.entries.forEach { interval ->
+            IntervalChip(
+                text = interval.label,
+                selected = interval == selected,
+                onClick = { onSelect(interval) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun IntervalChip(text: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .background(
+                if (selected) Color(0xFF22C55E) else Color(0xFF1F2937),
+                RoundedCornerShape(20.dp)
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
+        Text(
+            text = text,
+            color = if (selected) Color.Black else Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
