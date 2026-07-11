@@ -1,10 +1,13 @@
 package com.example.calorietracker.ui.viewmodel
 
+import com.example.calorietracker.data.local.NotificationPreferences
 import com.example.calorietracker.data.model.FastingSchedule
 import com.example.calorietracker.data.repository.FastingScheduleRepository
+import com.example.calorietracker.notifications.NotificationScheduler
 import com.example.calorietracker.util.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -42,6 +45,8 @@ data class FastingUiState(
 
 class FastingViewModel(
     private val repository: FastingScheduleRepository,
+    private val notificationPreferences: NotificationPreferences,
+    private val notificationScheduler: NotificationScheduler,
     override val sessionManager: SessionManager
 ) : BaseViewModel<FastingUiState>() {
     override val internalUiState = MutableStateFlow(FastingUiState())
@@ -148,13 +153,16 @@ class FastingViewModel(
                     isActive = true
                 )
                 repository.upsertFastingSchedule(newSchedule)
-                internalUiState.update { 
+                internalUiState.update {
                     it.copy(
-                        schedule = newSchedule, 
+                        schedule = newSchedule,
                         isFasting = checkIfFasting(newSchedule),
                         isEditing = false,
                         showPresets = false
-                    ) 
+                    )
+                }
+                if (notificationPreferences.fastingRemindersEnabled.first()) {
+                    notificationScheduler.scheduleFastingReminders(newSchedule)
                 }
             }
         }
