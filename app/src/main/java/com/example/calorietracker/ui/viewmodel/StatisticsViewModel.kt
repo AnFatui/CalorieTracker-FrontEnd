@@ -1,8 +1,11 @@
 package com.example.calorietracker.ui.viewmodel
 
+import com.example.calorietracker.data.repository.ProfileRepository
+import com.example.calorietracker.data.repository.WaterRepository
 import com.example.calorietracker.util.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 data class StatisticsUiState(
     override val loading: Boolean = false,
@@ -27,12 +30,31 @@ data class StatisticsUiState(
 }
 
 class StatisticsViewModel(
-    override val sessionManager: SessionManager
+    override val sessionManager: SessionManager,
+    private val waterRepository: WaterRepository,
+    private val profileRepository: ProfileRepository
 ) : BaseViewModel<StatisticsUiState>() {
     override val tag: String = "StatisticsViewModel"
 
     override val internalUiState = MutableStateFlow(StatisticsUiState())
     val uiState = internalUiState.asStateFlow()
 
+    init {
+        loadWater()
+    }
 
+    private fun loadWater() {
+        tryAndLogScope {
+            getUserId { userId ->
+                val waterMl = waterRepository.getPresentWaterLogs(userId).sumOf { it.amountMl }
+                val profile = profileRepository.getProfile(userId)
+                internalUiState.update {
+                    it.copy(
+                        waterMl = waterMl,
+                        waterMlGoal = profile?.waterGoalMl
+                    )
+                }
+            }
+        }
+    }
 }
