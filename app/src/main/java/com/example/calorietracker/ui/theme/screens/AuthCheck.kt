@@ -15,9 +15,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.calorietracker.data.repository.ProfileRepository
 import com.example.calorietracker.util.SessionManager
 
@@ -59,14 +61,12 @@ fun AuthCheck(
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .background(Color(0xFF1F2937), RoundedCornerShape(26.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("🔥", fontSize = 44.sp)
-            }
+            AsyncImage(
+                model = "file:///android_asset/macromate_icon_neu.png",
+                contentDescription = "MacroMate Logo",
+                modifier = Modifier.size(96.dp),
+                contentScale = ContentScale.Fit
+            )
 
             Spacer(Modifier.height(16.dp))
 

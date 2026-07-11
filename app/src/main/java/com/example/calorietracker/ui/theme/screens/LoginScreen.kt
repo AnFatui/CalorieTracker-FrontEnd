@@ -12,6 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.calorietracker.ui.theme.components.PrimaryButton
 import com.example.calorietracker.ui.viewmodel.LoginViewModel
 
@@ -51,14 +53,12 @@ fun LoginScreen(
             .padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
-            modifier = Modifier
-                .size(96.dp)
-                .background(Color(0xFF1F2937), RoundedCornerShape(26.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("🔥", fontSize = 44.sp)
-        }
+        AsyncImage(
+            model = "file:///android_asset/macromate_icon_neu.png",
+            contentDescription = "MacroMate Logo",
+            modifier = Modifier.size(96.dp),
+            contentScale = ContentScale.Fit
+        )
 
         Spacer(Modifier.height(10.dp))
 
