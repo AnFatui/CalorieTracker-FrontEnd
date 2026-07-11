@@ -3,6 +3,7 @@ package com.example.calorietracker
 import com.example.calorietracker.data.local.NotificationPreferences
 import com.example.calorietracker.data.repository.FastingScheduleRepository
 import com.example.calorietracker.data.repository.HealthConnectRepository
+import com.example.calorietracker.data.repository.MealRepository
 import com.example.calorietracker.data.repository.ProfileRepository
 import com.example.calorietracker.data.repository.WaterRepository
 import com.example.calorietracker.data.repository.WeightRepository
@@ -35,6 +36,7 @@ val appModule = module {
     single { ProfileRepository(get()) }
     single { WaterRepository(get()) }
     single { WeightRepository(get()) }
+    single { MealRepository(get()) }
     single { HealthConnectRepository(androidContext()) }
 
     // Services / utils

@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.calorietracker.data.model.FastingSchedule
 import com.example.calorietracker.data.repository.FastingScheduleRepository
 import com.example.calorietracker.data.repository.HealthConnectRepository
+import com.example.calorietracker.data.repository.MealRepository
 import com.example.calorietracker.data.repository.ProfileRepository
 import com.example.calorietracker.data.repository.WaterRepository
 import com.example.calorietracker.data.repository.WeightRepository
@@ -57,6 +58,7 @@ class HomeViewModel(
     private val profileRepository: ProfileRepository,
     private val fastingRepository: FastingScheduleRepository,
     private val healthConnectRepository: HealthConnectRepository,
+    private val mealRepository: MealRepository,
     override val sessionManager: SessionManager,
 ) : BaseViewModel<HomeUiState>() {
     override val tag: String = "HomeViewModel"
@@ -86,9 +88,10 @@ class HomeViewModel(
 
                 val presentWaterMl = getPresentWaterLevel(userId)
                 val todaySteps = healthConnectRepository.getTodaySteps()
+                val todayMeals = mealRepository.getTodayMealLogs(userId)
 
                 // Calculate fallback calories if no manual goal is set
-                val calcResult = if (profile.calorieGoal == null || profile.proteinGoal == null || profile.carbsGoal == null || profile.fatGoal == null) {
+                val calcResult = if (profile.calorieGoal == null) {
                     val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
                     val age = profile.birthYear?.let { currentYear - it } ?: 25
                     val latestWeight = currentWeightLog?.weightKg
@@ -106,6 +109,18 @@ class HomeViewModel(
                     } else null
                 } else null
 
+                val dailyCalorieGoal = profile.calorieGoal ?: calcResult?.calories
+                // Macro goals aren't stored as grams - only the chosen ratio is persisted,
+                // grams are derived from the calorie goal on the fly (see ProfileScreen's GoalsPage).
+                val dailyMacroGoals = dailyCalorieGoal?.let {
+                    com.example.calorietracker.util.CalorieCalculator.macroGoalsFromRatios(
+                        it,
+                        profile.proteinRatio,
+                        profile.carbsRatio,
+                        profile.fatRatio
+                    )
+                }
+
                 internalUiState.update {
                     val now = getCurrentLocalTime()
                     val isFastingActive = fastingSchedule?.let { s -> isCurrentlyFasting(s, now) } ?: false
@@ -113,10 +128,14 @@ class HomeViewModel(
                         displayName =  profile.displayName,
                         currentWeight = currentWeightLog?.weightKg,
                         targetWeight = profile.targetWeightKg,
-                        calorieGoal = profile.calorieGoal ?: calcResult?.calories,
-                        proteinGoal = profile.proteinGoal ?: calcResult?.protein,
-                        carbsGoal = profile.carbsGoal ?: calcResult?.carbs,
-                        fatGoal = profile.fatGoal ?: calcResult?.fat,
+                        calories = todayMeals.sumOf { meal -> meal.calories },
+                        calorieGoal = dailyCalorieGoal,
+                        protein = todayMeals.sumOf { meal -> meal.protein },
+                        proteinGoal = dailyMacroGoals?.protein,
+                        carbs = todayMeals.sumOf { meal -> meal.carbs },
+                        carbsGoal = dailyMacroGoals?.carbs,
+                        fat = todayMeals.sumOf { meal -> meal.fat },
+                        fatGoal = dailyMacroGoals?.fat,
                         waterMl = presentWaterMl,
                         waterGoalMl = profile.waterGoalMl,
                         steps = todaySteps,

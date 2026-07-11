@@ -123,26 +123,15 @@ fun AddMealScreen(
                     val carbs = carbsInput.toIntOrNull() ?: 0
                     val fat = fatInput.toIntOrNull() ?: 0
 
-//                    val newMeal = MealEntry(
-//                        name = mealName,
-//                        mealType = selectedMealTypeLocal,
-//                        calories = calories,
-//                        protein = protein,
-//                        carbs = carbs,
-//                        fat = fat
-//                    )
-//
-//                    onStateChange(
-//                        appState.copy(
-//                            calories = appState.calories + calories,
-//                            protein = appState.protein + protein,
-//                            carbs = appState.carbs + carbs,
-//                            fat = appState.fat + fat,
-//                            meals = appState.meals + newMeal
-//                        )
-//                    )
-
-                    onBackClick()
+                    viewModel.saveMeal(
+                        name = mealName,
+                        type = selectedMealTypeLocal,
+                        calories = calories,
+                        protein = protein,
+                        carbs = carbs,
+                        fat = fat,
+                        onSaved = onBackClick
+                    )
                 }
             )
 
