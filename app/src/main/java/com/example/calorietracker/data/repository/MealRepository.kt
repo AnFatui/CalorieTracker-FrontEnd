@@ -6,7 +6,7 @@ import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.time.ZoneId
 
 class MealRepository(
     private val supabase: SupabaseClient
@@ -17,8 +17,7 @@ class MealRepository(
     }
 
     suspend fun getTodayMealLogs(userId: String): List<MealLog> = withContext(Dispatchers.IO) {
-        val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-        val startOfDay = "${today}T00:00:00Z"
+        val startOfDay = startOfDayUtc(LocalDate.now())
 
         supabase.from("meal_logs")
             .select {
@@ -34,9 +33,8 @@ class MealRepository(
         startInclusive: LocalDate,
         endExclusive: LocalDate
     ): List<MealLog> = withContext(Dispatchers.IO) {
-        val formatter = DateTimeFormatter.ISO_LOCAL_DATE
-        val startIso = "${startInclusive.format(formatter)}T00:00:00Z"
-        val endIso = "${endExclusive.format(formatter)}T00:00:00Z"
+        val startIso = startOfDayUtc(startInclusive)
+        val endIso = startOfDayUtc(endExclusive)
 
         supabase.from("meal_logs")
             .select {
@@ -47,4 +45,15 @@ class MealRepository(
                 }
             }.decodeList<MealLog>()
     }
+
+    suspend fun deleteMealLog(logId: String) = withContext(Dispatchers.IO) {
+        supabase.from("meal_logs").delete {
+            filter {
+                eq("id", logId)
+            }
+        }
+    }
 }
+
+private fun startOfDayUtc(date: LocalDate): String =
+    date.atStartOfDay(ZoneId.systemDefault()).toInstant().toString()

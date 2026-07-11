@@ -19,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.calorietracker.ui.viewmodel.DailyChartValue
+import com.example.calorietracker.ui.viewmodel.ChartValue
 import com.example.calorietracker.ui.viewmodel.StatisticsViewModel
 
 @Composable
@@ -67,7 +67,7 @@ fun StatisticsScreen(
                     if (uiState.weeklyCalories.all { it.value == 0 }) {
                         EmptyInfo("Noch keine Kalorien eingetragen.")
                     } else {
-                        WeeklyBarChart(uiState.weeklyCalories, Color(0xFF22C55E))
+                        PeriodBarChart(uiState.weeklyCalories, Color(0xFF22C55E))
                     }
                 }
 
@@ -77,7 +77,19 @@ fun StatisticsScreen(
                     if (uiState.weeklyWater.all { it.value == 0 }) {
                         EmptyInfo("Noch kein Wasser eingetragen.")
                     } else {
-                        WeeklyBarChart(uiState.weeklyWater, Color(0xFF3B82F6))
+                        PeriodBarChart(uiState.weeklyWater, Color(0xFF3B82F6))
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                StatisticCard("Schritte diese Woche", height = 220.dp) {
+                    if (!uiState.hasStepsPermission) {
+                        EmptyInfo("Für Schritte-Statistiken bitte Health Connect Berechtigung erteilen.")
+                    } else if (uiState.weeklySteps.all { it.value == 0 }) {
+                        EmptyInfo("Noch keine Schritte erfasst.")
+                    } else {
+                        PeriodBarChart(uiState.weeklySteps, Color(0xFFA855F7))
                     }
                 }
 
@@ -106,49 +118,112 @@ fun StatisticsScreen(
             }
 
             "Monat" -> {
-                StatisticCard("Monatsübersicht") {
-                    if (true /* appState.meals.isEmpty() && appState.waterMl == 0 && appState.weightEntries.isEmpty()*/) {
-                        EmptyInfo("Noch keine Monatsdaten vorhanden.")
+                StatisticCard("Kalorien diesen Monat", height = 220.dp) {
+                    if (uiState.monthlyCalories.all { it.value == 0 }) {
+                        EmptyInfo("Noch keine Kalorien eingetragen.")
                     } else {
-                        Text(
-                            //"Mahlzeiten: ${appState.meals.size}",
-                            "",
-                            color = Color.White,
-                            fontSize = 12.sp
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            //"Kalorien gesamt: ${appState.calories} kcal",
-                            "",
-                            color = Color.White,
-                            fontSize = 12.sp
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            //"Wasser heute: ${appState.waterMl} ml",
-                            "",
-                            color = Color.White,
-                            fontSize = 12.sp
-                        )
+                        PeriodBarChart(uiState.monthlyCalories, Color(0xFF22C55E))
                     }
                 }
 
                 Spacer(Modifier.height(14.dp))
 
-                StatisticCard("Monatliche Entwicklung") {
-                    EmptyInfo("Detaillierte Monatsstatistiken werden später mit der Datenbank berechnet.")
-                }
-            }
-
-            "Jahr" -> {
-                StatisticCard("Jahresübersicht") {
-                    EmptyInfo("Noch keine Jahresdaten vorhanden.")
+                StatisticCard("Wasser diesen Monat", height = 220.dp, onClick = onWaterClick) {
+                    if (uiState.monthlyWater.all { it.value == 0 }) {
+                        EmptyInfo("Noch kein Wasser eingetragen.")
+                    } else {
+                        PeriodBarChart(uiState.monthlyWater, Color(0xFF3B82F6))
+                    }
                 }
 
                 Spacer(Modifier.height(14.dp))
 
-                StatisticCard("Langzeitentwicklung") {
-                    EmptyInfo("Jahresvergleiche werden später aus gespeicherten Daten erstellt.")
+                StatisticCard("Schritte diesen Monat", height = 220.dp) {
+                    if (!uiState.hasStepsPermission) {
+                        EmptyInfo("Für Schritte-Statistiken bitte Health Connect Berechtigung erteilen.")
+                    } else if (uiState.monthlySteps.all { it.value == 0 }) {
+                        EmptyInfo("Noch keine Schritte erfasst.")
+                    } else {
+                        PeriodBarChart(uiState.monthlySteps, Color(0xFFA855F7))
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                StatisticCard("Makronährstoffe diesen Monat", height = 190.dp) {
+                    MacroProgressLine(
+                        "Protein",
+                        uiState.monthProteins ?: 0,
+                        uiState.monthProteinGoal ?: 0,
+                        Color(0xFFEF4444)
+                    )
+                    MacroProgressLine(
+                        "Kohlenhydrate",
+                        uiState.monthCarbs ?: 0,
+                        uiState.monthCarbGoal ?: 0,
+                        Color(0xFFF97316)
+                    )
+                    MacroProgressLine(
+                        "Fette",
+                        uiState.monthFat ?: 0,
+                        uiState.monthFatGoal ?: 0,
+                        Color(0xFFFACC15)
+                    )
+                }
+            }
+
+            "Jahr" -> {
+                StatisticCard("Kalorien dieses Jahr", height = 220.dp) {
+                    if (uiState.yearlyCalories.all { it.value == 0 }) {
+                        EmptyInfo("Noch keine Kalorien eingetragen.")
+                    } else {
+                        PeriodBarChart(uiState.yearlyCalories, Color(0xFF22C55E))
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                StatisticCard("Wasser dieses Jahr", height = 220.dp, onClick = onWaterClick) {
+                    if (uiState.yearlyWater.all { it.value == 0 }) {
+                        EmptyInfo("Noch kein Wasser eingetragen.")
+                    } else {
+                        PeriodBarChart(uiState.yearlyWater, Color(0xFF3B82F6))
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                StatisticCard("Schritte dieses Jahr", height = 220.dp) {
+                    if (!uiState.hasStepsPermission) {
+                        EmptyInfo("Für Schritte-Statistiken bitte Health Connect Berechtigung erteilen.")
+                    } else if (uiState.yearlySteps.all { it.value == 0 }) {
+                        EmptyInfo("Noch keine Schritte erfasst.")
+                    } else {
+                        PeriodBarChart(uiState.yearlySteps, Color(0xFFA855F7))
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                StatisticCard("Makronährstoffe dieses Jahr", height = 190.dp) {
+                    MacroProgressLine(
+                        "Protein",
+                        uiState.yearProteins ?: 0,
+                        uiState.yearProteinGoal ?: 0,
+                        Color(0xFFEF4444)
+                    )
+                    MacroProgressLine(
+                        "Kohlenhydrate",
+                        uiState.yearCarbs ?: 0,
+                        uiState.yearCarbGoal ?: 0,
+                        Color(0xFFF97316)
+                    )
+                    MacroProgressLine(
+                        "Fette",
+                        uiState.yearFat ?: 0,
+                        uiState.yearFatGoal ?: 0,
+                        Color(0xFFFACC15)
+                    )
                 }
             }
         }
@@ -179,9 +254,11 @@ private fun StatisticCard(
 }
 
 @Composable
-private fun WeeklyBarChart(data: List<DailyChartValue>, barColor: Color) {
+private fun PeriodBarChart(data: List<ChartValue>, barColor: Color) {
     val maxValue = (data.maxOfOrNull { it.value } ?: 0).coerceAtLeast(1)
     val maxBarHeight = 100.dp
+    val barWidth = if (data.size > 7) 10.dp else 18.dp
+    val labelFontSize = if (data.size > 7) 9.sp else 11.sp
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -191,25 +268,25 @@ private fun WeeklyBarChart(data: List<DailyChartValue>, barColor: Color) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.Bottom
         ) {
-            data.forEach { day ->
+            data.forEach { entry ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = if (day.value > 0) "${day.value}" else "",
+                        text = if (entry.value > 0) "${entry.value}" else "",
                         color = Color.White.copy(alpha = 0.7f),
                         fontSize = 9.sp
                     )
                     Spacer(Modifier.height(4.dp))
-                    val barHeight = if (day.value > 0) {
-                        (maxBarHeight * (day.value.toFloat() / maxValue.toFloat())).coerceAtLeast(4.dp)
+                    val barHeight = if (entry.value > 0) {
+                        (maxBarHeight * (entry.value.toFloat() / maxValue.toFloat())).coerceAtLeast(4.dp)
                     } else {
                         2.dp
                     }
                     Box(
                         modifier = Modifier
-                            .width(18.dp)
+                            .width(barWidth)
                             .height(barHeight)
                             .background(
-                                if (day.isToday) barColor else barColor.copy(alpha = 0.45f),
+                                if (entry.isCurrent) barColor else barColor.copy(alpha = 0.45f),
                                 RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
                             )
                     )
@@ -223,12 +300,12 @@ private fun WeeklyBarChart(data: List<DailyChartValue>, barColor: Color) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            data.forEach { day ->
+            data.forEach { entry ->
                 Text(
-                    text = day.dayLabel,
-                    color = if (day.isToday) barColor else Color.White.copy(alpha = 0.6f),
-                    fontSize = 11.sp,
-                    fontWeight = if (day.isToday) FontWeight.Bold else FontWeight.Normal
+                    text = entry.label,
+                    color = if (entry.isCurrent) barColor else Color.White.copy(alpha = 0.6f),
+                    fontSize = labelFontSize,
+                    fontWeight = if (entry.isCurrent) FontWeight.Bold else FontWeight.Normal
                 )
             }
         }

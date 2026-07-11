@@ -5,10 +5,10 @@ import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.StepsRecord
-import androidx.health.connect.client.request.AggregateRequest
+import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
 import androidx.health.connect.client.time.TimeRangeFilter
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import java.time.LocalDate
+import java.time.Period
 
 class HealthConnectRepository(private val context: Context) {
 
@@ -42,24 +42,31 @@ class HealthConnectRepository(private val context: Context) {
     }
 
     suspend fun getTodaySteps(): Int {
-        val client = getClientOrNull() ?: return 0
-        if (!hasStepsPermission()) return 0
+        val today = LocalDate.now()
+        return getStepsInRange(today, today.plusDays(1))[today] ?: 0
+    }
+
+    suspend fun getStepsInRange(startInclusive: LocalDate, endExclusive: LocalDate): Map<LocalDate, Int> {
+        val client = getClientOrNull() ?: return emptyMap()
+        if (!hasStepsPermission()) return emptyMap()
 
         return try {
-            val zoneId = ZoneId.systemDefault()
-            val now = ZonedDateTime.now(zoneId)
-            val startOfDay = now.toLocalDate().atStartOfDay(zoneId)
-
-            val response = client.aggregate(
-                AggregateRequest(
+            val response = client.aggregateGroupByPeriod(
+                AggregateGroupByPeriodRequest(
                     metrics = setOf(StepsRecord.COUNT_TOTAL),
-                    timeRangeFilter = TimeRangeFilter.between(startOfDay.toInstant(), now.toInstant())
+                    timeRangeFilter = TimeRangeFilter.between(
+                        startInclusive.atStartOfDay(),
+                        endExclusive.atStartOfDay()
+                    ),
+                    timeRangeSlicer = Period.ofDays(1)
                 )
             )
-            (response[StepsRecord.COUNT_TOTAL] ?: 0L).toInt()
+            response.associate { bucket ->
+                bucket.startTime.toLocalDate() to (bucket.result[StepsRecord.COUNT_TOTAL] ?: 0L).toInt()
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to aggregate today's steps", e)
-            0
+            Log.e(TAG, "Failed to aggregate steps in range", e)
+            emptyMap()
         }
     }
 }
