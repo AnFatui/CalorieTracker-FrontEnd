@@ -1,10 +1,10 @@
 package com.example.calorietracker.notifications
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
-import androidx.work.Data
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
+import android.content.Intent
+import android.os.Build
 import com.example.calorietracker.data.model.FastingSchedule
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDateTime
@@ -13,34 +13,50 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
-import java.util.concurrent.TimeUnit
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
+enum class FastingReminderType {
+    BEFORE_START,
+    START,
+    END
+}
+
 /**
- * Schedules and cancels local reminder notifications via WorkManager.
+ * Schedules and cancels local reminder notifications via AlarmManager.
  *
- * WorkManager (not AlarmManager) is used for both reminder types: neither water nor fasting
- * reminders require alarm-clock-level exactness (a few minutes of drift is acceptable), so we
- * avoid the SCHEDULE_EXACT_ALARM permission and manual boot-rescheduling that exact alarms would
- * require. WorkManager's periodic work persists across app kills and device reboots on its own.
+ * Exact alarms (setExactAndAllowWhileIdle) are used because both reminder types are meant to fire
+ * at a specific wall-clock moment (e.g. fasting end at 11:00). A prior version used WorkManager's
+ * PeriodicWorkRequest, which only guarantees a *minimum* delay, not an exact time: under
+ * Doze/App Standby the OS deferred it to its next maintenance window, causing reminders to arrive
+ * hours late or only once the app was reopened. Since exact alarms are one-shot, AlarmReceiver
+ * reschedules each alarm's successor itself after it fires.
  */
 class NotificationScheduler(private val context: Context) {
 
-    fun scheduleWaterReminders(intervalMinutes: Long) {
-        val request = PeriodicWorkRequestBuilder<WaterReminderWorker>(intervalMinutes, TimeUnit.MINUTES)
-            .setInitialDelay(intervalMinutes, TimeUnit.MINUTES)
-            .build()
+    private val alarmManager: AlarmManager
+        get() = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            WATER_WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
-            request
-        )
+    fun scheduleWaterReminders(intervalMinutes: Long) {
+        val triggerAtMillis = System.currentTimeMillis() + intervalMinutes * 60_000L
+        scheduleExactAlarm(WATER_REQUEST_CODE, triggerAtMillis) {
+            putExtra(EXTRA_ALARM_TYPE, ALARM_TYPE_WATER)
+        }
+    }
+
+    /**
+     * Like [scheduleWaterReminders], but leaves an already-pending alarm untouched. Used when
+     * re-arming reminders on app start/boot, so simply reopening the app doesn't keep pushing the
+     * next water reminder further into the future.
+     */
+    fun ensureWaterRemindersScheduled(intervalMinutes: Long) {
+        if (!isAlarmPending(WATER_REQUEST_CODE)) {
+            scheduleWaterReminders(intervalMinutes)
+        }
     }
 
     fun cancelWaterReminders() {
-        WorkManager.getInstance(context).cancelUniqueWork(WATER_WORK_NAME)
+        cancelAlarm(WATER_REQUEST_CODE)
     }
 
     fun scheduleFastingReminders(schedule: FastingSchedule) {
@@ -48,32 +64,61 @@ class NotificationScheduler(private val context: Context) {
         val beforeStartMinutes = floorMod(startMinutes - 60, MINUTES_PER_DAY)
         val endMinutes = floorMod(startMinutes + schedule.durationHours * 60, MINUTES_PER_DAY)
 
-        scheduleDaily(FASTING_BEFORE_START_WORK_NAME, minutesToLocalTime(beforeStartMinutes), FastingReminderType.BEFORE_START)
-        scheduleDaily(FASTING_START_WORK_NAME, schedule.startTime, FastingReminderType.START)
-        scheduleDaily(FASTING_END_WORK_NAME, minutesToLocalTime(endMinutes), FastingReminderType.END)
+        scheduleFastingAlarm(FASTING_BEFORE_START_REQUEST_CODE, minutesToLocalTime(beforeStartMinutes), FastingReminderType.BEFORE_START)
+        scheduleFastingAlarm(FASTING_START_REQUEST_CODE, schedule.startTime, FastingReminderType.START)
+        scheduleFastingAlarm(FASTING_END_REQUEST_CODE, minutesToLocalTime(endMinutes), FastingReminderType.END)
     }
 
     fun cancelFastingReminders() {
-        val workManager = WorkManager.getInstance(context)
-        workManager.cancelUniqueWork(FASTING_BEFORE_START_WORK_NAME)
-        workManager.cancelUniqueWork(FASTING_START_WORK_NAME)
-        workManager.cancelUniqueWork(FASTING_END_WORK_NAME)
+        cancelAlarm(FASTING_BEFORE_START_REQUEST_CODE)
+        cancelAlarm(FASTING_START_REQUEST_CODE)
+        cancelAlarm(FASTING_END_REQUEST_CODE)
     }
 
-    private fun scheduleDaily(workName: String, targetTime: LocalTime, type: FastingReminderType) {
-        val data = Data.Builder()
-            .putString(FastingReminderWorker.KEY_REMINDER_TYPE, type.name)
-            .build()
+    private fun scheduleFastingAlarm(requestCode: Int, targetTime: LocalTime, type: FastingReminderType) {
+        val triggerAtMillis = System.currentTimeMillis() + initialDelayMillis(targetTime)
+        scheduleExactAlarm(requestCode, triggerAtMillis) {
+            putExtra(EXTRA_ALARM_TYPE, ALARM_TYPE_FASTING)
+            putExtra(EXTRA_FASTING_REMINDER_TYPE, type.name)
+        }
+    }
 
-        val request = PeriodicWorkRequestBuilder<FastingReminderWorker>(1, TimeUnit.DAYS)
-            .setInitialDelay(initialDelayMillis(targetTime), TimeUnit.MILLISECONDS)
-            .setInputData(data)
-            .build()
+    private fun scheduleExactAlarm(requestCode: Int, triggerAtMillis: Long, putExtras: Intent.() -> Unit) {
+        val pendingIntent = broadcastPendingIntent(requestCode, PendingIntent.FLAG_UPDATE_CURRENT, putExtras)
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            workName,
-            ExistingPeriodicWorkPolicy.UPDATE,
-            request
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+        } else {
+            // Exact-alarm permission not granted (Android 12+): fall back to an inexact alarm,
+            // which the OS still honors far more closely than a periodic WorkManager job did.
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+        }
+    }
+
+    private fun cancelAlarm(requestCode: Int) {
+        val pendingIntent = broadcastPendingIntent(requestCode, PendingIntent.FLAG_UPDATE_CURRENT) {}
+        alarmManager.cancel(pendingIntent)
+        pendingIntent.cancel()
+    }
+
+    private fun isAlarmPending(requestCode: Int): Boolean {
+        val intent = Intent(context, AlarmReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        return pendingIntent != null
+    }
+
+    private fun broadcastPendingIntent(requestCode: Int, flags: Int, putExtras: Intent.() -> Unit): PendingIntent {
+        val intent = Intent(context, AlarmReceiver::class.java).apply(putExtras)
+        return PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            intent,
+            flags or PendingIntent.FLAG_IMMUTABLE
         )
     }
 
@@ -101,9 +146,15 @@ class NotificationScheduler(private val context: Context) {
 
     companion object {
         private const val MINUTES_PER_DAY = 1440
-        private const val WATER_WORK_NAME = "water_reminder_work"
-        private const val FASTING_BEFORE_START_WORK_NAME = "fasting_reminder_before_start_work"
-        private const val FASTING_START_WORK_NAME = "fasting_reminder_start_work"
-        private const val FASTING_END_WORK_NAME = "fasting_reminder_end_work"
+
+        const val EXTRA_ALARM_TYPE = "alarm_type"
+        const val EXTRA_FASTING_REMINDER_TYPE = "fasting_reminder_type"
+        const val ALARM_TYPE_WATER = "water"
+        const val ALARM_TYPE_FASTING = "fasting"
+
+        private const val WATER_REQUEST_CODE = 1
+        private const val FASTING_BEFORE_START_REQUEST_CODE = 2
+        private const val FASTING_START_REQUEST_CODE = 3
+        private const val FASTING_END_REQUEST_CODE = 4
     }
 }

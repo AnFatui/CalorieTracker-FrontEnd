@@ -8,11 +8,14 @@ import kotlinx.coroutines.flow.first
 /**
  * Re-arms reminder schedules from persisted preferences.
  *
- * WorkManager's periodic work is supposed to survive reboots on its own, but several OEMs
- * (e.g. Samsung's background/auto-start restrictions) drop an app's persisted jobs on reboot
- * unless the app is explicitly allowed to auto-start. Calling this on every app launch, and
- * additionally from a BOOT_COMPLETED receiver where the OS permits it, makes the reminders
- * self-healing regardless of that OEM behavior.
+ * Exact alarms don't survive a device reboot (the OS clears all of an app's pending alarms), so
+ * this re-creates them from persisted preferences on every app launch and additionally from a
+ * BOOT_COMPLETED receiver, making the reminders self-healing.
+ *
+ * The water reminder uses [NotificationScheduler.ensureWaterRemindersScheduled] rather than
+ * always rescheduling: its next trigger is "now + interval", so unconditionally re-arming it on
+ * every app open would keep pushing the reminder further into the future and it would never fire
+ * while the app is closed.
  */
 suspend fun resyncNotificationSchedules(
     preferences: NotificationPreferences,
@@ -21,7 +24,7 @@ suspend fun resyncNotificationSchedules(
     sessionManager: SessionManager
 ) {
     if (preferences.waterRemindersEnabled.first()) {
-        scheduler.scheduleWaterReminders(preferences.waterReminderIntervalMinutes.first())
+        scheduler.ensureWaterRemindersScheduled(preferences.waterReminderIntervalMinutes.first())
     }
 
     if (preferences.fastingRemindersEnabled.first()) {

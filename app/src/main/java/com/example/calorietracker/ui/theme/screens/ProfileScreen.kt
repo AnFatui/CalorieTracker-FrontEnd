@@ -1,9 +1,12 @@
 package com.example.calorietracker.ui.theme.screens
 
 import android.Manifest
+import android.app.AlarmManager
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -1026,11 +1029,26 @@ private fun NotificationsPage(viewModel: NotificationSettingsViewModel = koinVie
         }
     }
 
+    fun requestExactAlarmPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        val alarmManager = context.getSystemService(AlarmManager::class.java)
+        if (alarmManager?.canScheduleExactAlarms() == false) {
+            context.startActivity(
+                Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                }
+            )
+        }
+    }
+
     Column {
         Spacer(Modifier.height(8.dp))
         SettingSwitch("Wasser-Erinnerungen", uiState.waterRemindersEnabled) { checked ->
             if (checked) {
-                runWithNotificationPermission { viewModel.setWaterRemindersEnabled(true) }
+                runWithNotificationPermission {
+                    requestExactAlarmPermissionIfNeeded()
+                    viewModel.setWaterRemindersEnabled(true)
+                }
             } else {
                 viewModel.setWaterRemindersEnabled(false)
             }
@@ -1045,7 +1063,10 @@ private fun NotificationsPage(viewModel: NotificationSettingsViewModel = koinVie
 
         SettingSwitch("Fasten-Erinnerungen", uiState.fastingRemindersEnabled) { checked ->
             if (checked) {
-                runWithNotificationPermission { viewModel.setFastingRemindersEnabled(true) }
+                runWithNotificationPermission {
+                    requestExactAlarmPermissionIfNeeded()
+                    viewModel.setFastingRemindersEnabled(true)
+                }
             } else {
                 viewModel.setFastingRemindersEnabled(false)
             }
