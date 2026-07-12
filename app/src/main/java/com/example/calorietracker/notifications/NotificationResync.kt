@@ -28,6 +28,7 @@ suspend fun resyncNotificationSchedules(
     }
 
     if (preferences.fastingRemindersEnabled.first()) {
+        sessionManager.awaitInitialization()
         val userId = sessionManager.currentUserId
         if (userId != null) {
             val schedule = fastingScheduleRepository.getFastingSchedule(userId)

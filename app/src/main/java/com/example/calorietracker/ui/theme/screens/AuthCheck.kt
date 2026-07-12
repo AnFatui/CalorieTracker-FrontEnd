@@ -32,7 +32,9 @@ fun AuthCheck(
     sessionManager: SessionManager,
     profileRepository: ProfileRepository
 ) {
-    LaunchedEffect(sessionManager.isLoggedIn) {
+    LaunchedEffect(Unit) {
+        sessionManager.awaitInitialization()
+
         if (!sessionManager.isLoggedIn) {
             onNavigateToLogin()
         } else {

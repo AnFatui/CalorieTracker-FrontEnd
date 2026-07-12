@@ -10,6 +10,16 @@ import kotlinx.serialization.json.JsonObject
 class SessionManager(
     private val supabase: SupabaseClient
 ) {
+    /**
+     * Suspends until Supabase has finished restoring (or failing to restore) the persisted
+     * session. [isLoggedIn] and [currentUserId] read in-memory auth state that is only
+     * populated once this completes, so callers must await this before trusting either on
+     * a cold start (e.g. after the process was killed in the background).
+     */
+    suspend fun awaitInitialization() {
+        supabase.auth.awaitInitialization()
+    }
+
     suspend fun logout() {
         supabase.auth.signOut()
     }

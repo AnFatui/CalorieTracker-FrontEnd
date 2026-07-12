@@ -1,6 +1,7 @@
 package com.example.calorietracker.notifications
 
 import android.Manifest
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,6 +9,7 @@ import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.example.calorietracker.MainActivity
 import com.example.calorietracker.R
 import com.example.calorietracker.data.local.NotificationPreferences
 import com.example.calorietracker.data.repository.FastingScheduleRepository
@@ -84,6 +86,7 @@ class AlarmReceiver : BroadcastReceiver(), KoinComponent {
 
         showNotification(context, NotificationChannels.FASTING_CHANNEL_ID, notificationId, title, text)
 
+        sessionManager.awaitInitialization()
         val userId = sessionManager.currentUserId ?: return
         val schedule = fastingScheduleRepository.getFastingSchedule(userId) ?: return
         scheduler.scheduleFastingReminders(schedule)
@@ -98,12 +101,23 @@ class AlarmReceiver : BroadcastReceiver(), KoinComponent {
             return
         }
 
+        val contentIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            contentIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
             .build()
 
         NotificationManagerCompat.from(context).notify(notificationId, notification)
