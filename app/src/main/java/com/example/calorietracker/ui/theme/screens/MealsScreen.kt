@@ -16,11 +16,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,11 +39,21 @@ fun MealsScreen(
     onRecipeClick: () -> Unit,
     onSetLoading: (Boolean) -> Unit
 ) {
-    var selectedDay by remember { mutableStateOf("Mo") }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.loading) {
         onSetLoading(uiState.loading)
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Column(
@@ -52,11 +63,14 @@ fun MealsScreen(
             .padding(horizontal = 20.dp)
     ) {
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            DateBox("Mo\n20", selectedDay == "Mo") { selectedDay = "Mo" }
-            DateBox("DI\n21", selectedDay == "Di") { selectedDay = "Di" }
-            DateBox("MI\n22", selectedDay == "Mi") { selectedDay = "Mi" }
-            DateBox("DO\n23", selectedDay == "Do") { selectedDay = "Do" }
-            DateBox("FR\n24", selectedDay == "Fr") { selectedDay = "Fr" }
+            val dayLabels = listOf("MO", "DI", "MI", "DO", "FR", "SA", "SO")
+            uiState.weekDates.forEachIndexed { index, date ->
+                DateBox(
+                    text = "${dayLabels[index]}\n${date.dayOfMonth}",
+                    selected = date == uiState.selectedDate,
+                    onClick = { viewModel.selectDate(date) }
+                )
+            }
         }
 
         Spacer(Modifier.height(24.dp))
@@ -65,28 +79,32 @@ fun MealsScreen(
             title = "Frühstück",
             meals = uiState.meals.filter { it.type == "Frühstück" },
             onAddClick = { onAddMealClick("Frühstück") },
-            onRecipeClick = onRecipeClick
+            onRecipeClick = onRecipeClick,
+            onDeleteClick = { it.id?.let { id -> viewModel.deleteMeal(id) } }
         )
 
         MealSection(
             title = "Mittagessen",
             meals = uiState.meals.filter { it.type == "Mittagessen" },
             onAddClick = { onAddMealClick("Mittagessen") },
-            onRecipeClick = onRecipeClick
+            onRecipeClick = onRecipeClick,
+            onDeleteClick = { it.id?.let { id -> viewModel.deleteMeal(id) } }
         )
 
         MealSection(
             title = "Abendessen",
             meals = uiState.meals.filter { it.type == "Abendessen" },
             onAddClick = { onAddMealClick("Abendessen") },
-            onRecipeClick = onRecipeClick
+            onRecipeClick = onRecipeClick,
+            onDeleteClick = { it.id?.let { id -> viewModel.deleteMeal(id) } }
         )
 
         MealSection(
             title = "Snacks",
             meals = uiState.meals.filter { it.type == "Snacks" },
             onAddClick = { onAddMealClick("Snacks") },
-            onRecipeClick = onRecipeClick
+            onRecipeClick = onRecipeClick,
+            onDeleteClick = { it.id?.let { id -> viewModel.deleteMeal(id) } }
         )
     }
 }
@@ -95,7 +113,7 @@ fun MealsScreen(
 private fun DateBox(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(48.dp)
+            .size(42.dp)
             .background(
                 if (selected) Color(0xFF22C55E) else Color.Transparent,
                 RoundedCornerShape(12.dp)
@@ -106,7 +124,7 @@ private fun DateBox(text: String, selected: Boolean, onClick: () -> Unit) {
         Text(
             text,
             color = if (selected) Color.Black else Color.White,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Bold
         )
     }
@@ -117,7 +135,8 @@ private fun MealSection(
     title: String,
     meals: List<MealLog>,
     onAddClick: () -> Unit,
-    onRecipeClick: () -> Unit
+    onRecipeClick: () -> Unit,
+    onDeleteClick: (MealLog) -> Unit
 ) {
     val calories = meals.sumOf { it.calories }
 
@@ -153,7 +172,7 @@ private fun MealSection(
             )
         } else {
             meals.forEach { meal ->
-                MealRow(meal = meal, onRecipeClick = onRecipeClick)
+                MealRow(meal = meal, onRecipeClick = onRecipeClick, onDeleteClick = { onDeleteClick(meal) })
             }
         }
     }
@@ -162,7 +181,8 @@ private fun MealSection(
 @Composable
 private fun MealRow(
     meal: MealLog,
-    onRecipeClick: () -> Unit
+    onRecipeClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -191,6 +211,16 @@ private fun MealRow(
             )
         }
 
+        Spacer(Modifier.width(8.dp))
+
         Text("${meal.calories} kcal", color = Color.White, fontSize = 11.sp)
+
+        Spacer(Modifier.width(10.dp))
+
+        Text(
+            "🗑",
+            fontSize = 14.sp,
+            modifier = Modifier.clickable { onDeleteClick() }
+        )
     }
 }

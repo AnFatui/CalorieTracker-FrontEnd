@@ -1,6 +1,6 @@
 package com.example.calorietracker.data.repository
 
-import com.example.calorietracker.data.model.WaterLog
+import com.example.calorietracker.data.model.MealLog
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
@@ -8,59 +8,48 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
 
-class WaterRepository(
+class MealRepository(
     private val supabase: SupabaseClient
 ) {
 
-    suspend fun addWaterLog(waterLog: WaterLog) = withContext(Dispatchers.IO) {
-        supabase.from("water_logs").insert(waterLog)
+    suspend fun addMealLog(mealLog: MealLog) = withContext(Dispatchers.IO) {
+        supabase.from("meal_logs").insert(mealLog)
     }
 
-    suspend fun getPresentWaterLogs(userId: String): List<WaterLog> = withContext(Dispatchers.IO) {
+    suspend fun getTodayMealLogs(userId: String): List<MealLog> = withContext(Dispatchers.IO) {
         val startOfDay = startOfDayUtc(LocalDate.now())
 
-        supabase.from("water_logs")
+        supabase.from("meal_logs")
             .select {
                 filter {
                     eq("user_id", userId)
                     gte("logged_at", startOfDay)
                 }
-            }.decodeList<WaterLog>()
+            }.decodeList<MealLog>()
     }
 
-    suspend fun getWaterLogsInRange(
+    suspend fun getMealLogsInRange(
         userId: String,
         startInclusive: LocalDate,
         endExclusive: LocalDate
-    ): List<WaterLog> = withContext(Dispatchers.IO) {
+    ): List<MealLog> = withContext(Dispatchers.IO) {
         val startIso = startOfDayUtc(startInclusive)
         val endIso = startOfDayUtc(endExclusive)
 
-        supabase.from("water_logs")
+        supabase.from("meal_logs")
             .select {
                 filter {
                     eq("user_id", userId)
                     gte("logged_at", startIso)
                     lt("logged_at", endIso)
                 }
-            }.decodeList<WaterLog>()
+            }.decodeList<MealLog>()
     }
 
-    suspend fun deleteWaterLog(logId: String) = withContext(Dispatchers.IO) {
-        supabase.from("water_logs").delete {
+    suspend fun deleteMealLog(logId: String) = withContext(Dispatchers.IO) {
+        supabase.from("meal_logs").delete {
             filter {
                 eq("id", logId)
-            }
-        }
-    }
-
-    suspend fun deleteAllWaterLogsForToday(userId: String) = withContext(Dispatchers.IO) {
-        val startOfDay = startOfDayUtc(LocalDate.now())
-
-        supabase.from("water_logs").delete {
-            filter {
-                eq("user_id", userId)
-                gte("logged_at", startOfDay)
             }
         }
     }

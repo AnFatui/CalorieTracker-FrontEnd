@@ -372,7 +372,7 @@ class MainActivity : ComponentActivity() {
                     viewModel = koinViewModel(),
                     onRecipesClick = { navController.navigate(Recipes) },
                     onSetLoading = onSetLoading,
-                    onBackClick = { }
+                    onBackClick = { navController.popBackStack() }
                 )
             }
         }
