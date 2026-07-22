@@ -211,13 +211,19 @@ class MainActivity : ComponentActivity() {
 
             composable<Login> {
                 onSetBarVisibility(false)
+                val profileRepository = get<ProfileRepository>()
+                val scope = rememberCoroutineScope()
 
                 LoginScreen(
                     viewModel = koinViewModel(),
-                    onLoginSuccess = {
-                        navController.navigate(Home) {
-                            popUpTo(Login) {
-                                inclusive = true
+                    onLoginSuccess = { userId ->
+                        scope.launch {
+                            val profile = profileRepository.getProfile(userId)
+                            val destination = if (profile?.onboardingDone == true) Home else Onboarding
+                            navController.navigate(destination) {
+                                popUpTo(Login) {
+                                    inclusive = true
+                                }
                             }
                         }
                     },

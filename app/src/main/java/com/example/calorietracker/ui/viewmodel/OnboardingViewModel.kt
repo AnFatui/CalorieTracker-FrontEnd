@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.jsonPrimitive
 import java.util.Calendar
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
@@ -56,6 +57,11 @@ class OnboardingViewModel(
     override val tag: String = OnboardingViewModel::class::simpleName.name
     private var usernameCheckJob: Job? = null
     private var userNameSetManually = false
+
+    init {
+        sessionManager.currentUserInfo?.userMetadata?.get("display_name")?.jsonPrimitive?.content
+            ?.let { name -> updateDisplayName(name) }
+    }
 
     fun updateDisplayName(name: String?) {
         if (userNameSetManually) internalUiState.update { it.copy(displayName = name) }
