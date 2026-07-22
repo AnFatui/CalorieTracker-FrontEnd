@@ -12,7 +12,9 @@ class ExceptionMapper {
                     "weak_password" -> "Das Passwort ist zu schwach (mind. 6 Zeichen)."
                     "signup_disabled" -> "Die Registrierung ist aktuell deaktiviert."
                     "validation_failed" -> ""
-                    else -> "Registrierungsfehler: ${e.error}"
+                    "over_email_send_rate_limit" -> "Zu viele Anfragen. Bitte warte kurz, bevor du es erneut versuchst."
+                    "invalid_credentials" -> "E-Mail oder Passwort ist falsch."
+                    else -> "Fehler: ${e.error}"
                 }
             }
 

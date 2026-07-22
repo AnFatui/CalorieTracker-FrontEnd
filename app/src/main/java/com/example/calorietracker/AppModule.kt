@@ -20,6 +20,7 @@ import com.example.calorietracker.ui.viewmodel.ProfileViewModel
 import com.example.calorietracker.ui.viewmodel.RecipeDetailViewModel
 import com.example.calorietracker.ui.viewmodel.RecipesViewModel
 import com.example.calorietracker.ui.viewmodel.RegisterViewModel
+import com.example.calorietracker.ui.viewmodel.ResetPasswordViewModel
 import com.example.calorietracker.ui.viewmodel.StatisticsViewModel
 import com.example.calorietracker.ui.viewmodel.StepTrackingViewModel
 import com.example.calorietracker.ui.viewmodel.WaterTrackingViewModel
@@ -58,6 +59,7 @@ val appModule = module {
     viewModelOf(::RecipesViewModel)
     viewModelOf(::RecipeDetailViewModel)
     viewModelOf(::RegisterViewModel)
+    viewModelOf(::ResetPasswordViewModel)
     viewModelOf(::StatisticsViewModel)
     viewModelOf(::StepTrackingViewModel)
     viewModelOf(::WaterTrackingViewModel)

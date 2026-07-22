@@ -193,6 +193,8 @@ fun LoginScreen(
     }
 
     if (showForgotPasswordDialog) {
+        var resetEmail by remember { mutableStateOf(email) }
+
         AlertDialog(
             onDismissRequest = {
                 showForgotPasswordDialog = false
@@ -204,15 +206,37 @@ fun LoginScreen(
                 Text("Passwort zurücksetzen")
             },
             text = {
-                Text("Diese Funktion wird später ergänzt.")
+                Column {
+                    Text("Gib deine E-Mail-Adresse ein. Falls ein Konto damit existiert, senden wir dir einen Link zum Zurücksetzen.")
+                    Spacer(Modifier.height(12.dp))
+                    LoginInputField(
+                        text = "E-Mail",
+                        value = resetEmail,
+                        keyboardType = KeyboardType.Email,
+                        onValueChange = { resetEmail = it }
+                    )
+                }
             },
             confirmButton = {
+                TextButton(
+                    enabled = resetEmail.isNotBlank(),
+                    onClick = {
+                        viewModel.sendPasswordReset(resetEmail) {
+                            onShowMessage("Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.")
+                        }
+                        showForgotPasswordDialog = false
+                    }
+                ) {
+                    Text("Senden", color = Color(0xFF22C55E))
+                }
+            },
+            dismissButton = {
                 TextButton(
                     onClick = {
                         showForgotPasswordDialog = false
                     }
                 ) {
-                    Text("OK", color = Color(0xFF22C55E))
+                    Text("Abbrechen", color = Color.Gray)
                 }
             }
         )

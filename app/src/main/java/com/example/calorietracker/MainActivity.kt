@@ -1,6 +1,7 @@
 package com.example.calorietracker
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -23,6 +24,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,11 +57,14 @@ import com.example.calorietracker.ui.theme.screens.OnboardingScreen
 import com.example.calorietracker.ui.theme.screens.ProfileScreen
 import com.example.calorietracker.ui.theme.screens.RecipesScreen
 import com.example.calorietracker.ui.theme.screens.RegisterScreen
+import com.example.calorietracker.ui.theme.screens.ResetPasswordScreen
 import com.example.calorietracker.ui.theme.screens.StatisticsScreen
 import com.example.calorietracker.ui.theme.screens.StepTrackingScreen
 import com.example.calorietracker.ui.theme.screens.WaterTrackingScreen
 import com.example.calorietracker.ui.theme.screens.WeightTrackingScreen
 import com.example.calorietracker.util.SessionManager
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.handleDeeplinks
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import org.koin.compose.viewmodel.koinViewModel
@@ -103,6 +108,24 @@ class MainActivity : ComponentActivity() {
 
                 val onSetLoading: (Boolean) -> Unit = {
                     isLoading = it
+                }
+
+                LaunchedEffect(Unit) {
+                    val supabase = get<SupabaseClient>()
+                    supabase.handleDeeplinks(
+                        intent = intent,
+                        onSessionSuccess = {
+                            scope.launch {
+                                navController.navigate(ResetPassword) {
+                                    popUpTo(0)
+                                }
+                            }
+                        },
+                        onError = { e ->
+                            Log.e("MainActivity", "Failed to handle deeplink", e)
+                            onShowMessage("Der Link ist ungültig oder abgelaufen.")
+                        }
+                    )
                 }
 
                 Scaffold(
@@ -239,6 +262,21 @@ class MainActivity : ComponentActivity() {
                     viewModel = koinViewModel(),
                     onCreateAccountSuccess = { navController.navigate(Onboarding) },
                     onBackToLoginClick = { navController.navigate(Login) },
+                    onShowMessage = onShowMessage,
+                )
+            }
+
+            composable<ResetPassword> {
+                onSetBarVisibility(false)
+
+                ResetPasswordScreen(
+                    viewModel = koinViewModel(),
+                    onPasswordUpdated = {
+                        onShowMessage("Passwort erfolgreich geändert.")
+                        navController.navigate(Login) {
+                            popUpTo(0)
+                        }
+                    },
                     onShowMessage = onShowMessage,
                 )
             }

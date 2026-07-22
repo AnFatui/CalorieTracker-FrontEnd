@@ -43,6 +43,16 @@ class SessionManager(
         }
     }
 
+    suspend fun sendPasswordResetEmail(email: String) {
+        supabase.auth.resetPasswordForEmail(email)
+    }
+
+    suspend fun updatePassword(newPassword: String) {
+        supabase.auth.updateUser {
+            password = newPassword
+        }
+    }
+
     /**
      * Signs in with a Google ID token. Supabase creates the user on first call, so this
      * covers both login and registration via Google.

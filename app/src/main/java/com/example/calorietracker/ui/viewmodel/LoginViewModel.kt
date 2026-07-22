@@ -77,4 +77,19 @@ class LoginViewModel(
             }
         }
     }
+
+    fun sendPasswordReset(email: String, onSuccess: () -> Unit) {
+        clearError()
+        tryAndLogScope(
+            onError = { e ->
+                val mappedMessage = exceptionMapper.mapAuthError(e)
+                internalUiState.update { it.copy(error = mappedMessage, loading = false) }
+                Log.e(tag, "Failed to send password reset email", e)
+            }
+        ) {
+            sessionManager.sendPasswordResetEmail(email)
+            Log.d(tag, "Password reset email sent to: $email")
+            onSuccess()
+        }
+    }
 }
