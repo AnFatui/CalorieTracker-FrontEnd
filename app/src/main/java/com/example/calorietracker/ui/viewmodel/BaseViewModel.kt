@@ -35,7 +35,7 @@ abstract class BaseViewModel<S : UiState<S>> : ViewModel() {
                     }
                 }
             } finally {
-                internalUiState.update { it.copyFlags(loading = false) }
+                internalUiState.update { it.copyFlags(loading = false, error = it.error) }
             }
         }
     }
