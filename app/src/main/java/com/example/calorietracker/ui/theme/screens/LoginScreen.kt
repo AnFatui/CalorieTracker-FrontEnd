@@ -19,12 +19,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.calorietracker.providers.GoogleAuthConfig
 import com.example.calorietracker.ui.theme.components.PrimaryButton
 import com.example.calorietracker.ui.viewmodel.LoginViewModel
+import com.example.calorietracker.util.GoogleAuthHelper
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -34,10 +39,23 @@ fun LoginScreen(
     viewModel: LoginViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
+
+    val onGoogleClick: () -> Unit = {
+        scope.launch {
+            try {
+                val credential = GoogleAuthHelper.requestGoogleCredential(context, GoogleAuthConfig.WEB_CLIENT_ID)
+                viewModel.loginWithGoogle(credential.idToken, credential.displayName, onLoginSuccess)
+            } catch (e: GetCredentialException) {
+                onShowMessage("Google-Anmeldung abgebrochen oder fehlgeschlagen.")
+            }
+        }
+    }
 
     // Observe error state and show snackbar via the activity's callback
     LaunchedEffect(uiState.error) {
@@ -148,9 +166,7 @@ fun LoginScreen(
                 .width(190.dp)
                 .height(54.dp)
                 .border(1.dp, Color(0xFF4B5563), RoundedCornerShape(18.dp))
-                .clickable {
-                    // Google Login wird später angebunden.
-                },
+                .clickable(onClick = onGoogleClick),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -177,6 +193,8 @@ fun LoginScreen(
     }
 
     if (showForgotPasswordDialog) {
+        var resetEmail by remember { mutableStateOf(email) }
+
         AlertDialog(
             onDismissRequest = {
                 showForgotPasswordDialog = false
@@ -188,15 +206,37 @@ fun LoginScreen(
                 Text("Passwort zurücksetzen")
             },
             text = {
-                Text("Diese Funktion wird später ergänzt.")
+                Column {
+                    Text("Gib deine E-Mail-Adresse ein. Falls ein Konto damit existiert, senden wir dir einen Link zum Zurücksetzen.")
+                    Spacer(Modifier.height(12.dp))
+                    LoginInputField(
+                        text = "E-Mail",
+                        value = resetEmail,
+                        keyboardType = KeyboardType.Email,
+                        onValueChange = { resetEmail = it }
+                    )
+                }
             },
             confirmButton = {
+                TextButton(
+                    enabled = resetEmail.isNotBlank(),
+                    onClick = {
+                        viewModel.sendPasswordReset(resetEmail) {
+                            onShowMessage("Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.")
+                        }
+                        showForgotPasswordDialog = false
+                    }
+                ) {
+                    Text("Senden", color = Color(0xFF22C55E))
+                }
+            },
+            dismissButton = {
                 TextButton(
                     onClick = {
                         showForgotPasswordDialog = false
                     }
                 ) {
-                    Text("OK", color = Color(0xFF22C55E))
+                    Text("Abbrechen", color = Color.Gray)
                 }
             }
         )

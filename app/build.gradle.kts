@@ -83,4 +83,9 @@ dependencies {
 
     // Health Connect
     implementation(libs.androidx.health.connect.client)
+
+    // Google Sign-In (Credential Manager)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 }

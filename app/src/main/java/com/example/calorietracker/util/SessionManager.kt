@@ -2,10 +2,14 @@ package com.example.calorietracker.util
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class SessionManager(
     private val supabase: SupabaseClient
@@ -36,6 +40,37 @@ class SessionManager(
             this.email = email
             this.password = password
             this.data = data
+        }
+    }
+
+    suspend fun sendPasswordResetEmail(email: String) {
+        supabase.auth.resetPasswordForEmail(email)
+    }
+
+    suspend fun updatePassword(newPassword: String) {
+        supabase.auth.updateUser {
+            password = newPassword
+        }
+    }
+
+    /**
+     * Signs in with a Google ID token. Supabase creates the user on first call, so this
+     * covers both login and registration via Google.
+     */
+    suspend fun signInWithGoogle(idToken: String, displayName: String? = null) {
+        supabase.auth.signInWith(IDToken) {
+            this.idToken = idToken
+            this.provider = Google
+        }
+
+        // On first sign-in with a fresh Supabase user, seed display_name from the Google
+        // account so the onboarding name field can be pre-filled instead of colliding with
+        // an already-taken username the user has to type themselves.
+        val hasDisplayName = supabase.auth.currentUserOrNull()?.userMetadata?.get("display_name") != null
+        if (!displayName.isNullOrBlank() && !hasDisplayName) {
+            supabase.auth.updateUser {
+                data = buildJsonObject { put("display_name", displayName) }
+            }
         }
     }
 

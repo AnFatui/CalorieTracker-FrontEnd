@@ -53,4 +53,43 @@ class LoginViewModel(
             }
         }
     }
+
+    fun loginWithGoogle(idToken: String, displayName: String?, onSuccess: (String) -> Unit) {
+        clearError()
+        tryAndLogScope(
+            onError = { e ->
+                val mappedMessage = exceptionMapper.mapAuthError(e)
+                internalUiState.update { it.copy(error = mappedMessage, loading = false) }
+                Log.e(tag, "Failed to login with Google", e)
+            }
+        ) {
+            sessionManager.signInWithGoogle(idToken, displayName)
+            val userInfo = sessionManager.currentUserInfo
+            if (userInfo == null) {
+                val errorMsg =
+                    "Google-Anmeldung fehlgeschlagen: Benutzer konnte nicht authentifiziert werden."
+                Log.e(tag, errorMsg)
+                internalUiState.update { it.copy(loading = false, error = errorMsg) }
+            } else {
+                Log.d(tag, "Google-Anmeldung erfolgreich für: ${userInfo.email}")
+                internalUiState.update { it.copy(isLoggedIn = true, loading = false) }
+                onSuccess(userInfo.id)
+            }
+        }
+    }
+
+    fun sendPasswordReset(email: String, onSuccess: () -> Unit) {
+        clearError()
+        tryAndLogScope(
+            onError = { e ->
+                val mappedMessage = exceptionMapper.mapAuthError(e)
+                internalUiState.update { it.copy(error = mappedMessage, loading = false) }
+                Log.e(tag, "Failed to send password reset email", e)
+            }
+        ) {
+            sessionManager.sendPasswordResetEmail(email)
+            Log.d(tag, "Password reset email sent to: $email")
+            onSuccess()
+        }
+    }
 }
