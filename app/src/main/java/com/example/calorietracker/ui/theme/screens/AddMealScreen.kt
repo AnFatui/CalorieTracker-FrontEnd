@@ -27,18 +27,24 @@ fun AddMealScreen(
     viewModel: AddMealViewModel,
     onBackClick: () -> Unit,
     onRecipesClick: () -> Unit,
-    onSetLoading: (Boolean) -> Unit
+    onSetLoading: (Boolean) -> Unit,
+    prefillName: String? = null,
+    prefillMealType: String? = null,
+    prefillCalories: Int? = null,
+    prefillProtein: Int? = null,
+    prefillCarbs: Int? = null,
+    prefillFat: Int? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val selectedMealType = "Frühstück"
+    val selectedMealType = prefillMealType ?: "Frühstück"
     var selectedMode by remember { mutableStateOf("Manuell") }
     var selectedMealTypeLocal by remember { mutableStateOf(selectedMealType) }
 
-    var mealName by remember { mutableStateOf("") }
-    var caloriesInput by remember { mutableStateOf("") }
-    var proteinInput by remember { mutableStateOf("") }
-    var carbsInput by remember { mutableStateOf("") }
-    var fatInput by remember { mutableStateOf("") }
+    var mealName by remember { mutableStateOf(prefillName ?: "") }
+    var caloriesInput by remember { mutableStateOf(prefillCalories?.toString() ?: "") }
+    var proteinInput by remember { mutableStateOf(prefillProtein?.toString() ?: "") }
+    var carbsInput by remember { mutableStateOf(prefillCarbs?.toString() ?: "") }
+    var fatInput by remember { mutableStateOf(prefillFat?.toString() ?: "") }
 
     val canSave = mealName.isNotBlank() &&
             caloriesInput.isNotBlank() &&

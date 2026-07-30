@@ -40,7 +40,17 @@ object Recipes
 data class ProfileDetails(val page: ProfilePage = ProfilePage.OVERVIEW)
 
 @Serializable
-object AddMeal
+data class AddMeal(
+    val recipeName: String? = null,
+    val mealType: String? = null,
+    val calories: Int? = null,
+    val protein: Int? = null,
+    val carbs: Int? = null,
+    val fat: Int? = null
+)
+
+@Serializable
+data class RecipeDetail(val recipeId: String)
 
 @Serializable
 object Fasting

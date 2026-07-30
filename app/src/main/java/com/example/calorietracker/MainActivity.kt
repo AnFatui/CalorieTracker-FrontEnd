@@ -55,6 +55,7 @@ import com.example.calorietracker.ui.theme.screens.LoginScreen
 import com.example.calorietracker.ui.theme.screens.MealsScreen
 import com.example.calorietracker.ui.theme.screens.OnboardingScreen
 import com.example.calorietracker.ui.theme.screens.ProfileScreen
+import com.example.calorietracker.ui.theme.screens.RecipeDetailScreen
 import com.example.calorietracker.ui.theme.screens.RecipesScreen
 import com.example.calorietracker.ui.theme.screens.RegisterScreen
 import com.example.calorietracker.ui.theme.screens.ResetPasswordScreen
@@ -367,7 +368,32 @@ class MainActivity : ComponentActivity() {
 
                 RecipesScreen(
                     viewModel = koinViewModel(),
-                    onRecipeClick = { },
+                    onRecipeClick = { recipeId -> navController.navigate(RecipeDetail(recipeId)) },
+                    onSetLoading = onSetLoading
+                )
+            }
+
+            composable<RecipeDetail> { backStackEntry ->
+                val recipeRoute = backStackEntry.toRoute<RecipeDetail>()
+                onSetTitle("Rezept")
+                onSetBarVisibility(true)
+
+                RecipeDetailScreen(
+                    recipeId = recipeRoute.recipeId,
+                    viewModel = koinViewModel(),
+                    onBackClick = { navController.popBackStack() },
+                    onAddToMeal = { recipe ->
+                        navController.navigate(
+                            AddMeal(
+                                recipeName = recipe.name,
+                                mealType = recipe.category,
+                                calories = recipe.calories,
+                                protein = recipe.protein,
+                                carbs = recipe.carbs,
+                                fat = recipe.fat
+                            )
+                        )
+                    },
                     onSetLoading = onSetLoading
                 )
             }
@@ -403,12 +429,13 @@ class MainActivity : ComponentActivity() {
                 MealsScreen(
                     viewModel = koinViewModel(),
                     onRecipeClick = { navController.navigate(Recipes) },
-                    onAddMealClick = { navController.navigate(AddMeal) },
+                    onAddMealClick = { navController.navigate(AddMeal()) },
                     onSetLoading = onSetLoading
                 )
             }
 
-            composable<AddMeal> {
+            composable<AddMeal> { backStackEntry ->
+                val addMealRoute = backStackEntry.toRoute<AddMeal>()
                 onSetTitle("Mahlzeit hinzufügen")
                 onSetBarVisibility(true)
 
@@ -416,7 +443,13 @@ class MainActivity : ComponentActivity() {
                     viewModel = koinViewModel(),
                     onRecipesClick = { navController.navigate(Recipes) },
                     onSetLoading = onSetLoading,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack(MealTracking, inclusive = false) },
+                    prefillName = addMealRoute.recipeName,
+                    prefillMealType = addMealRoute.mealType,
+                    prefillCalories = addMealRoute.calories,
+                    prefillProtein = addMealRoute.protein,
+                    prefillCarbs = addMealRoute.carbs,
+                    prefillFat = addMealRoute.fat
                 )
             }
         }
