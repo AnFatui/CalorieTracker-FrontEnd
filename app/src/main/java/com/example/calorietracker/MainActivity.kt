@@ -147,7 +147,7 @@ class MainActivity : ComponentActivity() {
                         AppBottomBar(
                             onAddClick = {
                                 if (navController.currentDestination?.hasRoute<AddMeal>() == false) navController.navigate(
-                                    AddMeal
+                                    AddMeal()
                                 )
                             },
                             onHomeClick = {
@@ -429,7 +429,7 @@ class MainActivity : ComponentActivity() {
                 MealsScreen(
                     viewModel = koinViewModel(),
                     onRecipeClick = { navController.navigate(Recipes) },
-                    onAddMealClick = { navController.navigate(AddMeal()) },
+                    onAddMealClick = { mealType -> navController.navigate(AddMeal(mealType = mealType)) },
                     onSetLoading = onSetLoading
                 )
             }
